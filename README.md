@@ -1,23 +1,23 @@
 # KD Sarees – Full-stack project
 
-Modern web app structure: React (Vite) frontend + Node.js/Express backend, ready to scale.
+Modern web app structure: React (Vite) client + Node.js/Express server, ready to scale.
 
 ## Structure
 
 ```
 kd_sarees/
-├── frontend/          # React (Vite) – client
+├── client/            # React (Vite) – frontend
 │   └── src/
 │       ├── components/   # Reusable UI
 │       ├── pages/        # Page/screen components
-│       ├── services/     # API calls to backend
+│       ├── services/     # API calls to server
 │       ├── hooks/        # Custom React hooks
 │       ├── context/      # React Context providers
 │       ├── assets/       # Images, fonts
 │       ├── styles/       # Global/shared styles
 │       └── utils/        # Helpers
 │
-├── backend/           # Node.js + Express – server
+├── server/            # Node.js + Express – API
 │   ├── config/          # DB and app config
 │   ├── controllers/     # Request handlers
 │   ├── models/          # Mongoose models (MongoDB)
@@ -30,10 +30,10 @@ kd_sarees/
 
 ## Run
 
-**Backend**
+**Server**
 
 ```bash
-cd backend
+cd server
 npm install
 cp .env.example .env   # optional
 npm run dev
@@ -41,19 +41,19 @@ npm run dev
 
 Runs at `http://localhost:5000`.
 
-**Frontend**
+**Client**
 
 ```bash
-cd frontend
+cd client
 npm install
 npm run dev
 ```
 
-Set `VITE_API_URL=http://localhost:5000` in frontend `.env` if the API is on another origin.
+Set `VITE_API_URL=http://localhost:5000` in client `.env` if the API is on another origin.
 
 ## Example flow
 
 - **API:** `GET /api/items` → `routes/itemRoutes.js` → `controllers/itemController.getItems`
-- **Frontend:** `ItemsPage.jsx` uses `services/itemService.getItems()` and renders the list.
+- **Client:** `ItemsPage.jsx` uses `services/itemService.getItems()` and renders the list.
 
-See `backend/README.md` and folder `README.md` files for details.
+See `server/README.md` and folder `README.md` files for details.

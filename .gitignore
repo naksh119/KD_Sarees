@@ -1,0 +1,17 @@
+# Dependencies
+node_modules/
+
+# Environment (keep .env.example)
+.env
+.env.local
+.env.*.local
+
+# Build / cache
+dist/
+build/
+*.log
+.vite/
+
+# OS
+.DS_Store
+Thumbs.db
