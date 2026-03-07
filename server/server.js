@@ -7,6 +7,7 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
+const fs = require('fs');
 
 const errorHandler = require('./middleware/errorHandler');
 const itemRoutes = require('./routes/itemRoutes');
@@ -26,6 +27,17 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // API routes (example)
 app.use('/api/items', itemRoutes);
+
+// Serve React build in production (Render single-service deploy)
+const clientDist = path.join(__dirname, '..', 'client', 'dist');
+if (process.env.NODE_ENV === 'production' && fs.existsSync(clientDist)) {
+  app.use(express.static(clientDist));
+  app.get('*', (req, res) => {
+    if (!req.path.startsWith('/api') && !req.path.startsWith('/uploads')) {
+      res.sendFile(path.join(clientDist, 'index.html'));
+    }
+  });
+}
 
 // Health check
 app.get('/api/health', (req, res) => {
