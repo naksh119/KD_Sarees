@@ -1,0 +1,47 @@
+/* App-specific styles. Use Tailwind in components where possible. */
+
+/* Outer border pattern for category cards (chevron / V-shape feel) */
+.category-card__frame {
+  background-image: linear-gradient(135deg, rgba(94, 234, 212, 0.4) 25%, transparent 25%),
+    linear-gradient(225deg, rgba(94, 234, 212, 0.4) 25%, transparent 25%),
+    linear-gradient(315deg, rgba(94, 234, 212, 0.3) 25%, transparent 25%),
+    linear-gradient(45deg, rgba(94, 234, 212, 0.3) 25%, transparent 25%);
+  background-size: 8px 8px;
+  background-position: 0 0, 4px 0, 4px 4px, 0 4px;
+}
+
+/* Dark blue label area – solid, no pattern */
+.category-card__label {
+  background-color: #0f172a;
+}
+
+/* Category card: scale down from full size to final size on page load */
+.category-card--scale-in {
+  animation: category-card-scale-in 0.7s ease-out forwards;
+  transform-origin: center center;
+}
+
+@keyframes category-card-scale-in {
+  from {
+    transform: scale(1.2);
+    opacity: 0.85;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+/* Infinite scroll marquee for features strip */
+.features-strip-track {
+  animation: features-strip-scroll 35s linear infinite;
+}
+
+@keyframes features-strip-scroll {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-33.333%);
+  }
+}
