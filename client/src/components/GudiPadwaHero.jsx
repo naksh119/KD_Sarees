@@ -16,8 +16,7 @@ export default function GudiPadwaHero() {
       {/* TRENDING NOW strip */}
       <div className="bg-white py-3 text-center md:py-6 px-3">
         <span
-          className="text-xl font-bold uppercase tracking-wider text-[#0f172a] sm:text-2xl md:text-3xl"
-          style={{ fontFamily: "'Poppins', sans-serif" }}
+          className="text-center text-2xl font-bold uppercase tracking-wider text-slate-800 md:text-3xl"
         >
           Trending Now
         </span>
@@ -55,7 +54,7 @@ export default function GudiPadwaHero() {
           </p>
           <a
             href={SHOP_LINK}
-            className="mt-6 inline-flex items-center justify-center rounded-md bg-[#c4a77d] px-8 py-3.5 text-sm font-bold uppercase tracking-wider text-[#2c1810] hover:bg-[#b8956a] focus:outline-none focus:ring-2 focus:ring-[#c4a77d] focus:ring-offset-2 focus:ring-offset-[#2c1810] transition-colors w-fit"
+            className="mt-6 inline-flex items-center justify-center rounded-md bg-[#c4a77d] px-8 py-3.5 text-base font-bold uppercase tracking-wide text-[#2c1810] hover:bg-[#b8956a] focus:outline-none focus:ring-2 focus:ring-[#c4a77d] focus:ring-offset-2 focus:ring-offset-[#2c1810] transition-colors w-fit"
             style={{ fontFamily: "'Poppins', sans-serif" }}
           >
             Shop Now

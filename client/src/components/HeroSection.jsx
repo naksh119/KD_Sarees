@@ -29,7 +29,7 @@ export default function HeroSection() {
       {/* Text overlay – left side, vertically centered */}
       <div className="absolute inset-0 z-10 flex flex-col justify-center px-6 py-12 md:px-12 md:py-16 md:max-w-[50%]">
         <h2
-          className="text-4xl md:text-5xl lg:text-6xl font-normal italic text-black tracking-wide"
+          className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl xl:text-8xl font-normal italic text-[#f5d76e] tracking-wide"
           style={{ fontFamily: "'Great Vibes', cursive" }}
         >
           Summer in Florals
@@ -44,7 +44,7 @@ export default function HeroSection() {
         </p>
         <a
           href={SHOP_LINK}
-          className="mt-8 inline-flex items-center justify-center rounded-md bg-transparent px-8 py-3.5 text-sm font-bold uppercase tracking-wider text-white border-2 border-white hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-transparent transition-colors w-fit"
+          className="mt-8 inline-flex items-center justify-center rounded-md bg-transparent px-8 py-3.5 text-base font-bold uppercase tracking-wide text-white border-2 border-white hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-transparent transition-colors w-fit"
           style={{ fontFamily: "'Poppins', sans-serif" }}
         >
           Shop now

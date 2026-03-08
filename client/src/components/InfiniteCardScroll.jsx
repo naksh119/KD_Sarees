@@ -1,57 +1,67 @@
 /**
  * Horizontal infinite card scroll – user can drag/slide; content loops seamlessly.
- * Uses scroll-snap and three copies of content with scroll-position reset for infinite effect.
+ * No auto-scroll: position only changes when the user scrolls.
  */
 
-import { useRef, useEffect, useCallback } from 'react';
+import { useRef, useEffect, useLayoutEffect, useCallback } from 'react';
+
+const GAP_PX = 16; // gap-4 between sets
 
 export default function InfiniteCardScroll({ items, renderItem, cardClassName = '' }) {
   const containerRef = useRef(null);
   const setRef = useRef(null);
   const isJumpingRef = useRef(false);
-
-  const setWidthRef = useRef(0);
+  const segmentWidthRef = useRef(0);
+  const allowJumpRef = useRef(false);
 
   const handleScroll = useCallback(() => {
     const el = containerRef.current;
-    const setWidth = setWidthRef.current;
-    if (!el || !setWidth || isJumpingRef.current) return;
+    const segW = segmentWidthRef.current;
+    if (!el || !segW || isJumpingRef.current || !allowJumpRef.current) return;
 
     const { scrollLeft } = el;
-    // Only jump when we're well INSIDE the duplicate set, so after jump we stay at same visual position (no snap to first card)
-    const inset = 0.15; // jump only after 15% into Set0 or Set2
-    if (scrollLeft < setWidth * inset) {
-      // Deep in Set0 → jump to same position in Set1
+    const inset = 0.2;
+    if (scrollLeft < segW * inset) {
       isJumpingRef.current = true;
-      el.scrollLeft += setWidth;
+      el.classList.add('snap-none');
+      el.scrollLeft += segW;
       requestAnimationFrame(() => {
+        el.classList.remove('snap-none');
         isJumpingRef.current = false;
       });
-    } else if (scrollLeft > setWidth * (2 + inset)) {
-      // Deep in Set2 → jump to same position in Set1
+    } else if (scrollLeft > segW * (2 + inset)) {
       isJumpingRef.current = true;
-      el.scrollLeft -= setWidth;
+      el.classList.add('snap-none');
+      el.scrollLeft -= segW;
       requestAnimationFrame(() => {
+        el.classList.remove('snap-none');
         isJumpingRef.current = false;
       });
     }
   }, []);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     const el = containerRef.current;
     const setEl = setRef.current;
     if (!el || !setEl) return;
 
     const setWidth = setEl.offsetWidth;
-    setWidthRef.current = setWidth;
-    // Start in the middle set after layout so user can scroll both ways
-    const raf = requestAnimationFrame(() => {
-      if (setWidthRef.current) el.scrollLeft = setWidthRef.current;
-    });
+    segmentWidthRef.current = setWidth + GAP_PX;
+    const segW = segmentWidthRef.current;
+    // Set initial position instantly (no animation) so user doesn't see any auto-scroll
+    el.scrollTo({ left: segW, behavior: 'auto' });
+  }, [items?.length]);
 
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    // Only allow jump logic after user has had a chance to scroll (avoids any programmatic scroll triggering jump)
+    const t = setTimeout(() => {
+      allowJumpRef.current = true;
+    }, 400);
     el.addEventListener('scroll', handleScroll, { passive: true });
     return () => {
-      cancelAnimationFrame(raf);
+      clearTimeout(t);
       el.removeEventListener('scroll', handleScroll);
     };
   }, [handleScroll, items?.length]);
@@ -63,7 +73,7 @@ export default function InfiniteCardScroll({ items, renderItem, cardClassName = 
   return (
     <div
       ref={containerRef}
-      className="flex overflow-x-auto overflow-y-hidden gap-4 pb-2 snap-x snap-mandatory scroll-smooth hide-scrollbar"
+      className="flex overflow-x-auto overflow-y-hidden gap-4 pb-2 snap-x snap-mandatory hide-scrollbar"
       style={{ WebkitOverflowScrolling: 'touch' }}
       aria-label="Scrollable product cards"
     >

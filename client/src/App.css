@@ -1,5 +1,19 @@
 /* App-specific styles. Use Tailwind in components where possible. */
 
+/* Hide scrollbar for horizontal infinite scroll */
+.hide-scrollbar {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+/* Disable scroll-snap during infinite-scroll jump (avoids wrong snap) */
+.snap-none {
+  scroll-snap-type: none;
+}
+
 /* Outer border pattern for category cards (chevron / V-shape feel) */
 .category-card__frame {
   background-image: linear-gradient(135deg, rgba(94, 234, 212, 0.4) 25%, transparent 25%),

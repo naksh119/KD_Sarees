@@ -1,21 +1,17 @@
 /**
- * TOP CATEGORIES section – uses CategoryCard for each category.
- * When section scrolls into view, card images shrink with smooth transition.
+ * TOP CATEGORIES section – single CategoryCard component reused for each category.
+ * All card data (image, name, overlay, link) is passed via the categories prop.
  */
 
 import { useState, useRef, useEffect } from 'react';
 import CategoryCard from './CategoryCard';
+import sareeImage from '../assets/images/saree.webp';
 
 const DEFAULT_CATEGORIES = [
-  { imageSrc: 'https://picsum.photos/seed/sarees1/400/533', categoryName: 'SAREES', href: '#' },
-  { imageSrc: 'https://picsum.photos/seed/blouse1/400/533', categoryName: 'BLOUSE', href: '#' },
-  { imageSrc: 'https://picsum.photos/seed/shapewear1/400/533', categoryName: 'SHAPEWEAR', href: '#' },
-  {
-    imageSrc: 'https://picsum.photos/seed/sarees-sat/400/533',
-    categoryName: 'SAREES SATURDAY',
-    overlayText: 'Sarees Saturday',
-    href: '#',
-  },
+  { imageSrc: sareeImage, imageAlt: 'Banarasi saree', categoryName: 'BANARASI', href: '#' },
+  { imageSrc: sareeImage, imageAlt: 'Rajathani saree', categoryName: 'RAJATHANI', href: '#' },
+  { imageSrc: sareeImage, imageAlt: 'Silk saree', categoryName: 'SILK', href: '#' },
+  { imageSrc: sareeImage, imageAlt: 'Cotton saree', categoryName: 'COTTON', href: '#' },
 ];
 
 export default function TopCategories({ categories = DEFAULT_CATEGORIES }) {
@@ -38,7 +34,7 @@ export default function TopCategories({ categories = DEFAULT_CATEGORIES }) {
   return (
     <section
       ref={sectionRef}
-      className="w-full bg-slate-100 py-12 md:py-16"
+      className="w-full py-12 md:py-16"
       aria-labelledby="top-categories-heading"
     >
       <div className="mx-auto max-w-[1400px] px-4 sm:px-6 lg:px-8">
