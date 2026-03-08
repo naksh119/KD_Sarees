@@ -9,6 +9,8 @@ import SilkSareeSection from './components/SilkSareeSection'
 import ProductSection from './components/ProductSection'
 import BestsellerSareesSection from './components/BestsellerSareesSection'
 import StoryLookbookSection from './components/StoryLookbookSection'
+import CustomerReviewsSection from './components/CustomerReviewsSection'
+import Footer from './components/footer/Footer'
 
 function App() {
   return (
@@ -24,7 +26,9 @@ function App() {
         <SilkSareeSection />
         <BestsellerSareesSection />
         <StoryLookbookSection />
+        <CustomerReviewsSection />
       </main>
+      <Footer />
     </>
   )
 }
