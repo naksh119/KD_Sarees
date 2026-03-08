@@ -1,10 +1,10 @@
 {
   "name": "kd_sarees",
   "private": true,
-  "description": "KD Sarees - full stack app",
+  "description": "KD Sarees – frontend app",
   "scripts": {
-    "build": "cd client && npm install && npm run build && cd ../server && npm install",
-    "start": "cd server && npm start"
+    "build": "cd client && npm install && npm run build",
+    "start": "cd client && npm run dev"
   },
   "engines": {
     "node": ">=18"
