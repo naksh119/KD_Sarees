@@ -103,7 +103,7 @@ const toInputDateTimeText = (value) => {
 
 export default function AdminDashboardPage() {
   const navigate = useNavigate()
-  const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'
+  const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'https://kd-sarees.onrender.com'
   const [products, setProducts] = useState(defaultProducts)
   const [formData, setFormData] = useState(initialForm)
   const [categories, setCategories] = useState([])

@@ -15,7 +15,7 @@ const highlightItems = [
 
 export default function LoginPage({ isPopup = false, onClose }) {
   const navigate = useNavigate()
-  const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'
+  const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'https://kd-sarees.onrender.com'
 
   const [formData, setFormData] = useState({
     identifier: '',

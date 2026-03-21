@@ -32,7 +32,7 @@ const getCountdownParts = (diffMs) => {
 }
 
 export default function OfferTicker() {
-  const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'
+  const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'https://kd-sarees.onrender.com'
   const [offers, setOffers] = useState([])
   const [now, setNow] = useState(Date.now())
   const fixedOfferText = 'Holi Special - Summer Holi 20% OFF Code: 2001'

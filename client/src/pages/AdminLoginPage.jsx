@@ -7,7 +7,7 @@ const ADMIN_REFRESH_TOKEN_KEY = 'kd_sarees_admin_refresh_token'
 
 export default function AdminLoginPage() {
   const navigate = useNavigate()
-  const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'
+  const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'https://kd-sarees.onrender.com'
   const [formData, setFormData] = useState({ email: '', password: '' })
   const [error, setError] = useState('')
   const [alreadyLoggedIn, setAlreadyLoggedIn] = useState(false)
