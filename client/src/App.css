@@ -48,7 +48,47 @@
 
 /* Infinite scroll marquee for features strip */
 .features-strip-track {
+  display: flex;
+  width: max-content;
   animation: features-strip-scroll 35s linear infinite;
+  will-change: transform;
+}
+
+.features-strip-group {
+  min-width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+}
+
+@media (max-width: 640px) {
+  .features-strip-item {
+    padding-left: 0.6rem;
+    padding-right: 0.6rem;
+  }
+
+  .features-strip-item svg {
+    width: 1.7rem;
+    height: 1.7rem;
+  }
+
+  .features-strip-label {
+    font-size: 0.73rem;
+  }
+
+  .features-strip-group {
+    justify-content: space-evenly;
+  }
+
+  .features-strip-track {
+    animation-duration: 20s;
+  }
+}
+
+@media (min-width: 641px) and (max-width: 1024px) {
+  .features-strip-track {
+    animation-duration: 22s;
+  }
 }
 
 @keyframes features-strip-scroll {
@@ -56,7 +96,7 @@
     transform: translateX(0);
   }
   100% {
-    transform: translateX(-33.333%);
+    transform: translateX(-100%);
   }
 }
 

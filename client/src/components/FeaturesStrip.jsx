@@ -4,8 +4,6 @@
  */
 
 const ICON_COLOR = '#38bdf8'; // light blue outline
-const ITEM_MIN_WIDTH = '10rem'; // fixed width per item for even spacing
-
 const ITEMS = [
   {
     label: 'Free Shipping',
@@ -53,12 +51,9 @@ const ITEMS = [
 
 function FeatureItem({ label, icon }) {
   return (
-    <div
-      className="flex flex-col items-center justify-center gap-2 shrink-0"
-      style={{ width: ITEM_MIN_WIDTH }}
-    >
+    <div className="features-strip-item flex flex-col items-center justify-center gap-2 px-3 sm:px-8 shrink-0">
       {icon}
-      <span className="text-sm font-medium text-gray-700 whitespace-nowrap">{label}</span>
+      <span className="features-strip-label text-sm font-medium text-gray-700 whitespace-nowrap">{label}</span>
     </div>
   );
 }
@@ -78,13 +73,10 @@ export default function FeaturesStrip() {
       aria-label="Features: Free Shipping, Easy Returns, Thousands of Styles, Genuine Quality"
     >
       <div className="features-strip-track flex">
-        <div className="flex items-center gap-0" style={{ minWidth: 'max-content' }}>
+        <div className="features-strip-group">
           {row}
         </div>
-        <div className="flex items-center gap-0 shrink-0" style={{ minWidth: 'max-content' }} aria-hidden>
-          {row}
-        </div>
-        <div className="flex items-center gap-0 shrink-0" style={{ minWidth: 'max-content' }} aria-hidden>
+        <div className="features-strip-group" aria-hidden>
           {row}
         </div>
       </div>

@@ -20,6 +20,11 @@ export default function ProductCard({
   showAddToCartButton = false,
   href = '#',
   onAddToCart,
+  isAddToCartLoading = false,
+  onToggleFavorite,
+  isFavorite = false,
+  showDeleteIcon = false,
+  onDelete,
 }) {
   const formatPrice = (n) => (n != null ? `₹ ${Number(n).toLocaleString('en-IN')}` : '');
 
@@ -68,16 +73,52 @@ export default function ProductCard({
         </span>
       )}
 
-      <button
-        type="button"
-        onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}
-        className="absolute top-2 right-2 z-10 flex h-8 w-8 items-center justify-center rounded-full border-2 border-blue-500 bg-white text-blue-500 shadow hover:bg-blue-50 transition-colors"
-        aria-label="Add to wishlist"
-      >
-        <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2} aria-hidden>
-          <path strokeLinecap="round" strokeLinejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-        </svg>
-      </button>
+      <div className="absolute top-2 right-2 z-10 hidden items-center gap-2 sm:flex">
+        <button
+          type="button"
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            if (onToggleFavorite) {
+              onToggleFavorite();
+            }
+          }}
+          className={`flex h-8 w-8 items-center justify-center rounded-full border-2 shadow transition-colors ${
+            isFavorite
+              ? 'border-rose-500 bg-rose-50 text-rose-600'
+              : 'border-blue-500 bg-white text-blue-500 hover:bg-blue-50'
+          }`}
+          aria-label={isFavorite ? 'Remove from favorites' : 'Add to favorites'}
+        >
+          <svg
+            className="h-4 w-4"
+            fill={isFavorite ? 'currentColor' : 'none'}
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+            strokeWidth={2}
+            aria-hidden
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+          </svg>
+        </button>
+
+        {showDeleteIcon && (
+          <button
+            type="button"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              if (onDelete) onDelete();
+            }}
+            className="flex h-8 w-8 items-center justify-center rounded-full border border-red-200 bg-white text-red-600 shadow transition hover:bg-red-50"
+            aria-label="Delete item"
+          >
+            <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} aria-hidden>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M4 7h16M10 11v6M14 11v6M6 7l1 12h10l1-12M9 7V5h6v2" />
+            </svg>
+          </button>
+        )}
+      </div>
 
       {/* Add to cart - appears on hover with same transition as image */}
       {showAddToCartButton && (
@@ -88,9 +129,20 @@ export default function ProductCard({
             e.stopPropagation();
             if (onAddToCart) onAddToCart(id);
           }}
-          className="absolute left-0 right-0 bottom-0 translate-y-full rounded-lg bg-[#c4a77d] py-3 text-base font-bold uppercase tracking-wide text-[#2c1810] opacity-0 transition-all duration-1000 ease-in-out group-hover:translate-y-0 group-hover:opacity-100 hover:bg-[#b8956a]"
+          disabled={isAddToCartLoading}
+          className="absolute left-0 right-0 bottom-0 flex items-center justify-center gap-2 rounded-lg bg-[#c4a77d] py-3 text-base font-bold uppercase tracking-wide text-[#2c1810] opacity-100 translate-y-0 transition-all duration-300 ease-in-out hover:bg-[#b8956a] disabled:cursor-not-allowed disabled:opacity-80 sm:opacity-0 sm:translate-y-full sm:group-hover:translate-y-0 sm:group-hover:opacity-100"
         >
-          Add to cart
+          {isAddToCartLoading ? (
+            <>
+              <span
+                className="h-4 w-4 animate-spin rounded-full border-2 border-[#2c1810]/40 border-t-[#2c1810]"
+                aria-hidden
+              />
+              Adding...
+            </>
+          ) : (
+            'Add to cart'
+          )}
         </button>
       )}
     </div>
@@ -117,10 +169,10 @@ export default function ProductCard({
           )}
         </div>
 
-        <div className="mt-2 flex items-center gap-1 text-sm text-slate-800">
-          <span className="flex">{stars}</span>
+        <div className="mt-2 flex items-center gap-1 text-slate-800">
+          <span className="flex text-lg sm:text-xl">{stars}</span>
           {reviewCount > 0 && (
-            <span className="ml-1">({reviewCount})</span>
+            <span className="ml-1 text-sm">({reviewCount})</span>
           )}
         </div>
       </div>

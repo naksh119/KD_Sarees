@@ -4,74 +4,18 @@
  */
 
 import ProductCard from './ProductCard';
-import sareeImage from '../assets/images/saree.webp';
-import sareeImage2 from '../assets/images/sareeImage2.webp';
-import sareeImage3 from '../assets/images/sareeimage3.jpg';
 
-const DEFAULT_PRODUCTS = [
-  {
-    id: '1',
-    imageSrc: sareeImage,
-    imageSrcHover: sareeImage2,
-    imageAlt: 'Red silk woven Paithani saree',
-    productTitle: 'Red Silk Woven Paithani Saree',
-    originalPrice: 2791,
-    currentPrice: 999,
-    discountPercentage: 64,
-    rating: 4,
-    reviewCount: 22,
-    isSale: true,
-    showAddToCartButton: true,
-    href: '#',
-  },
-  {
-    id: '2',
-    imageSrc: sareeImage,
-    imageSrcHover: sareeImage3,
-    imageAlt: 'Mint green silk woven Paithani saree',
-    productTitle: 'Mint Green Silk Woven Paithani Saree',
-    originalPrice: 4782,
-    currentPrice: 1599,
-    discountPercentage: 67,
-    rating: 4.5,
-    reviewCount: 7,
-    isSale: false,
-    showAddToCartButton: true,
-    href: '#',
-  },
-  {
-    id: '3',
-    imageSrc: sareeImage,
-    imageSrcHover: sareeImage2,
-    imageAlt: 'Lime green silk woven Paithani saree',
-    productTitle: 'Lime Green Silk Woven Paithani Saree',
-    originalPrice: 4112,
-    currentPrice: 1099,
-    discountPercentage: 73,
-    rating: 4,
-    reviewCount: 6,
-    isSale: true,
-    showAddToCartButton: true,
-    href: '#',
-  },
-  {
-    id: '4',
-    imageSrc: sareeImage,
-    imageSrcHover: sareeImage3,
-    imageAlt: 'Black silk woven Paithani saree',
-    productTitle: 'Black Silk Woven Paithani Saree',
-    originalPrice: 3256,
-    currentPrice: 999,
-    discountPercentage: 69,
-    rating: 4,
-    reviewCount: 24,
-    isSale: false,
-    showAddToCartButton: true,
-    href: '#',
-  },
-];
+export default function ProductSection({
+  products = [],
+  isLoading = false,
+  viewAllHref = '#',
+  onAddToCart,
+  addingToCartProductId,
+  onToggleFavorite,
+  isFavorite,
+}) {
+  const hasProducts = Array.isArray(products) && products.length > 0;
 
-export default function ProductSection({ products = DEFAULT_PRODUCTS, viewAllHref = '#', onAddToCart }) {
   return (
     <section
       className="w-full py-12 md:py-16"
@@ -84,36 +28,63 @@ export default function ProductSection({ products = DEFAULT_PRODUCTS, viewAllHre
         >
           Featured Products
         </h2>
-        <div className="mt-8 grid grid-cols-2 gap-4 sm:gap-6 lg:grid-cols-4 lg:gap-8">
-          {products.map((product) => (
-            <ProductCard
-              key={product.id}
-              id={product.id}
-              imageSrc={product.imageSrc}
-              imageSrcHover={product.imageSrcHover}
-              imageAlt={product.imageAlt}
-              productTitle={product.productTitle}
-              originalPrice={product.originalPrice}
-              currentPrice={product.currentPrice}
-              discountPercentage={product.discountPercentage}
-              rating={product.rating}
-              reviewCount={product.reviewCount}
-              isSale={product.isSale}
-              showAddToCartButton={product.showAddToCartButton}
-              href={product.href}
-              onAddToCart={onAddToCart}
-            />
-          ))}
+        <div
+          className="mt-8 flex gap-4 overflow-x-auto overflow-y-hidden pb-2 snap-x snap-mandatory hide-scrollbar sm:grid sm:grid-cols-2 sm:gap-6 sm:overflow-visible lg:grid-cols-4 lg:gap-8"
+          style={{ WebkitOverflowScrolling: 'touch' }}
+        >
+          {isLoading &&
+            Array.from({ length: 4 }).map((_, index) => (
+              <div
+                key={`product-skeleton-${index}`}
+                className="shrink-0 w-full snap-start sm:w-auto overflow-hidden rounded-xl bg-white shadow-md"
+                aria-hidden
+              >
+                <div className="aspect-[3/4] w-full animate-pulse bg-slate-200" />
+                <div className="p-3">
+                  <div className="h-4 w-4/5 animate-pulse rounded bg-slate-200" />
+                  <div className="mt-2 h-4 w-3/5 animate-pulse rounded bg-slate-200" />
+                  <div className="mt-3 h-5 w-2/5 animate-pulse rounded bg-slate-200" />
+                </div>
+              </div>
+            ))}
+
+          {!isLoading &&
+            hasProducts &&
+            products.map((product) => (
+              <div key={product.id} className="shrink-0 w-full snap-start sm:w-auto">
+                <ProductCard
+                  id={product.id}
+                  imageSrc={product.imageSrc}
+                  imageSrcHover={product.imageSrcHover}
+                  imageAlt={product.imageAlt}
+                  productTitle={product.productTitle}
+                  originalPrice={product.originalPrice}
+                  currentPrice={product.currentPrice}
+                  discountPercentage={product.discountPercentage}
+                  rating={product.rating}
+                  reviewCount={product.reviewCount}
+                  isSale={product.isSale}
+                  showAddToCartButton={product.showAddToCartButton}
+                  href={product.href}
+                  onAddToCart={onAddToCart}
+                  isAddToCartLoading={addingToCartProductId === String(product.id)}
+                  onToggleFavorite={() => onToggleFavorite?.(product)}
+                  isFavorite={Boolean(isFavorite?.(product.id))}
+                />
+              </div>
+            ))}
         </div>
 
-        <div className="mt-10 flex justify-center">
-          <a
-            href={viewAllHref}
-            className="rounded-md bg-[#c4a77d] px-14 py-3 text-base font-bold uppercase tracking-wide text-[#2c1810] hover:bg-[#b8956a] transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[#c4a77d] focus-visible:ring-offset-2"
-          >
-            View all
-          </a>
-        </div>
+        {!isLoading && hasProducts && viewAllHref && (
+          <div className="mt-10 flex justify-center">
+            <a
+              href={viewAllHref}
+              className="rounded-md bg-[#c4a77d] px-14 py-3 text-base font-bold uppercase tracking-wide text-[#2c1810] hover:bg-[#b8956a] transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[#c4a77d] focus-visible:ring-offset-2"
+            >
+              View all
+            </a>
+          </div>
+        )}
       </div>
     </section>
   );

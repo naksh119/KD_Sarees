@@ -88,36 +88,41 @@ export default function OfferTicker() {
   }, [nearestEndingOffer, now])
 
   return (
-    <div className="sticky top-0 z-[60] relative w-full bg-[#0f172a] text-[#f5d76e] overflow-hidden">
-      <div className="py-2 text-xs sm:text-sm tracking-wide text-center font-medium">{fixedOfferText}</div>
-      <div className="hidden md:flex absolute left-0 top-0 h-full items-center bg-gradient-to-r from-[#0f172a] via-[#0f172a] to-transparent pr-8 pl-3">
-        <div className="offer-countdown-badge flex w-[240px] items-center justify-center gap-2 rounded-full border border-[#f5d76e]/45 px-3 py-1.5 text-[11px] sm:text-xs font-semibold">
-          <span className="offer-countdown-dot" />
-          {rightCornerText === 'No end date' ? (
-            <span className="w-[180px] text-center tracking-wide">No end date</span>
-          ) : (
-            <span className="w-[180px] text-center tracking-wide tabular-nums">
-              {countdownParts.isExpired
-                ? 'Expired'
-                : `${countdownParts.days}d ${countdownParts.hours}h ${countdownParts.minutes}m ${countdownParts.seconds}s`}
-            </span>
-          )}
+    <>
+      <div className="fixed inset-x-0 top-0 z-[70] w-full bg-[#0f172a] text-[#f5d76e] overflow-hidden">
+        <div className="relative">
+          <div className="py-2 text-xs sm:text-sm tracking-wide text-center font-medium">{fixedOfferText}</div>
+          <div className="hidden md:flex absolute left-0 top-0 h-full items-center bg-gradient-to-r from-[#0f172a] via-[#0f172a] to-transparent pr-8 pl-3">
+            <div className="offer-countdown-badge flex w-[240px] items-center justify-center gap-2 rounded-full border border-[#f5d76e]/45 px-3 py-1.5 text-[11px] sm:text-xs font-semibold">
+              <span className="offer-countdown-dot" />
+              {rightCornerText === 'No end date' ? (
+                <span className="w-[180px] text-center tracking-wide">No end date</span>
+              ) : (
+                <span className="w-[180px] text-center tracking-wide tabular-nums">
+                  {countdownParts.isExpired
+                    ? 'Expired'
+                    : `${countdownParts.days}d ${countdownParts.hours}h ${countdownParts.minutes}m ${countdownParts.seconds}s`}
+                </span>
+              )}
+            </div>
+          </div>
+          <div className="hidden md:flex absolute right-0 top-0 h-full items-center bg-gradient-to-l from-[#0f172a] via-[#0f172a] to-transparent pl-8 pr-3">
+            <div className="offer-countdown-badge flex w-[240px] items-center justify-center gap-2 rounded-full border border-[#f5d76e]/45 px-3 py-1.5 text-[11px] sm:text-xs font-semibold">
+              <span className="offer-countdown-dot" />
+              {rightCornerText === 'No end date' ? (
+                <span className="w-[180px] text-center tracking-wide">No end date</span>
+              ) : (
+                <span className="w-[180px] text-center tracking-wide tabular-nums">
+                  {countdownParts.isExpired
+                    ? 'Expired'
+                    : `${countdownParts.days}d ${countdownParts.hours}h ${countdownParts.minutes}m ${countdownParts.seconds}s`}
+                </span>
+              )}
+            </div>
+          </div>
         </div>
       </div>
-      <div className="hidden md:flex absolute right-0 top-0 h-full items-center bg-gradient-to-l from-[#0f172a] via-[#0f172a] to-transparent pl-8 pr-3">
-        <div className="offer-countdown-badge flex w-[240px] items-center justify-center gap-2 rounded-full border border-[#f5d76e]/45 px-3 py-1.5 text-[11px] sm:text-xs font-semibold">
-          <span className="offer-countdown-dot" />
-          {rightCornerText === 'No end date' ? (
-            <span className="w-[180px] text-center tracking-wide">No end date</span>
-          ) : (
-            <span className="w-[180px] text-center tracking-wide tabular-nums">
-              {countdownParts.isExpired
-                ? 'Expired'
-                : `${countdownParts.days}d ${countdownParts.hours}h ${countdownParts.minutes}m ${countdownParts.seconds}s`}
-            </span>
-          )}
-        </div>
-      </div>
-    </div>
+      <div aria-hidden="true" className="h-8" />
+    </>
   )
 }

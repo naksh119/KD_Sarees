@@ -4,8 +4,9 @@
  * Use on any page: import Navbar from '../components/Navbar'; then <Navbar />
  */
 
-import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { getFavorites } from '../utils/favorites';
 
 const topLinks = [
   { label: 'SAREE', href: '#' },
@@ -41,6 +42,25 @@ function CartIcon({ className = 'w-5 h-5' }) {
   );
 }
 
+function HeartIcon({ className = 'w-5 h-5', filled = false }) {
+  return (
+    <svg
+      className={className}
+      fill={filled ? 'currentColor' : 'none'}
+      stroke="currentColor"
+      viewBox="0 0 24 24"
+      aria-hidden="true"
+    >
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth={2}
+        d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
+      />
+    </svg>
+  );
+}
+
 function MenuIcon() {
   return (
     <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
@@ -57,17 +77,56 @@ function CloseIcon() {
   );
 }
 
-export default function Navbar() {
+export default function Navbar({ favoritesCount, hasTopTicker = false }) {
+  const navigate = useNavigate();
+  const location = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [localFavoritesCount, setLocalFavoritesCount] = useState(0);
 
   const closeMobileMenu = () => setMobileMenuOpen(false);
+
+  useEffect(() => {
+    if (!mobileMenuOpen) return undefined;
+
+    const previousBodyOverflow = document.body.style.overflow;
+    const previousHtmlOverflow = document.documentElement.style.overflow;
+
+    document.body.style.overflow = 'hidden';
+    document.documentElement.style.overflow = 'hidden';
+
+    return () => {
+      document.body.style.overflow = previousBodyOverflow;
+      document.documentElement.style.overflow = previousHtmlOverflow;
+    };
+  }, [mobileMenuOpen]);
+
+  useEffect(() => {
+    const syncFavoritesCount = () => {
+      setLocalFavoritesCount(getFavorites().length);
+    };
+
+    syncFavoritesCount();
+    window.addEventListener('favorites:changed', syncFavoritesCount);
+    return () => window.removeEventListener('favorites:changed', syncFavoritesCount);
+  }, []);
+
+  const displayFavoritesCount = typeof favoritesCount === 'number' ? favoritesCount : localFavoritesCount;
 
   const linkClass = (highlight) =>
     `block py-2 text-sm uppercase tracking-wide border-b border-gray-100 last:border-0 lg:border-0 lg:py-0 lg:inline-block lg:whitespace-nowrap font-bold ${highlight ? 'text-red-600' : 'text-gray-800 hover:text-gray-600'}`;
 
+  const handleLogout = () => {
+    localStorage.removeItem('kd_sarees_token');
+    localStorage.removeItem('kd_sarees_refresh_token');
+    localStorage.removeItem('kd_sarees_user');
+    closeMobileMenu();
+    navigate('/');
+  };
+
   return (
-    <header className="w-full bg-white border-b border-gray-100 sticky top-8 z-50">
-      <nav className="w-full max-w-[1400px] mx-auto px-3 sm:px-6 lg:px-8" aria-label="Main navigation">
+    <>
+      <header className={`fixed inset-x-0 ${hasTopTicker ? 'top-8' : 'top-0'} z-50 w-full border-b border-gray-100 bg-white`}>
+        <nav className="w-full max-w-[1400px] mx-auto px-3 sm:px-6 lg:px-8" aria-label="Main navigation">
         {/* Main bar: logo, desktop nav, icons / mobile menu button */}
         <div className="flex items-center justify-between gap-2 sm:gap-4 py-5 sm:py-6 lg:py-7">
           {/* Logo */}
@@ -106,8 +165,21 @@ export default function Navbar() {
 
           {/* Right: utility icons (desktop) + hamburger (mobile/tablet) */}
           <div className="flex items-center gap-3 sm:gap-4 lg:gap-6 shrink-0 text-gray-900">
-            <Link to="/auth" className="p-1.5 hover:opacity-70 sm:block" aria-label="Account">
+            <Link
+              to="/auth"
+              state={{ backgroundLocation: location }}
+              className="p-1.5 hover:opacity-70 sm:block"
+              aria-label="Account"
+            >
               <UserIcon />
+            </Link>
+            <Link to="/favorites" className="relative hidden p-1.5 hover:opacity-70 sm:block" aria-label="Favorites">
+              <HeartIcon filled={displayFavoritesCount > 0} />
+              {displayFavoritesCount > 0 && (
+                <span className="absolute -right-1 -top-1 min-w-[1.1rem] rounded-full bg-rose-600 px-1 text-[10px] leading-4 text-white text-center">
+                  {displayFavoritesCount > 99 ? '99+' : displayFavoritesCount}
+                </span>
+              )}
             </Link>
             <Link to="/cart" className="p-1.5 hover:opacity-70" aria-label="Cart">
               <CartIcon />
@@ -126,7 +198,9 @@ export default function Navbar() {
 
         {/* Mobile/tablet menu overlay + drawer */}
         <div
-          className={`fixed inset-0 z-50 lg:hidden ${mobileMenuOpen ? 'visible' : 'invisible'}`}
+          className={`fixed inset-x-0 bottom-0 ${hasTopTicker ? 'top-8' : 'top-0'} z-[80] lg:hidden ${
+            mobileMenuOpen ? 'visible' : 'invisible'
+          }`}
           aria-hidden={!mobileMenuOpen}
         >
           {/* Backdrop */}
@@ -139,20 +213,20 @@ export default function Navbar() {
 
           {/* Drawer panel */}
           <div
-            className={`absolute top-0 right-0 h-full w-full max-w-sm bg-white shadow-xl flex flex-col transition-transform duration-300 ease-out ${
+            className={`absolute top-0 right-0 h-full w-full bg-white shadow-xl flex flex-col transition-transform duration-300 ease-out ${
               mobileMenuOpen ? 'translate-x-0' : 'translate-x-full'
             }`}
           >
-            <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
+            <div className="flex items-center justify-between gap-3 px-4 py-3 border-b border-gray-100">
               <span
-                className="text-3xl font-normal normal-case tracking-normal text-[#191970]"
+                className="flex-1 min-w-0 pr-2 text-2xl sm:text-3xl leading-none font-normal normal-case tracking-normal text-[#191970] truncate"
                 style={{ fontFamily: "'Great Vibes', cursive" }}
               >
                 Kd Sarees
               </span>
               <button
                 type="button"
-                className="p-2 hover:bg-gray-100 rounded-md"
+                className="shrink-0 p-2 hover:bg-gray-100 rounded-md"
                 onClick={closeMobileMenu}
                 aria-label="Close menu"
               >
@@ -179,9 +253,20 @@ export default function Navbar() {
                 ))}
               </div>
             </div>
+            <div className="border-t border-gray-100 p-4">
+              <button
+                type="button"
+                onClick={handleLogout}
+                className="w-full rounded-md bg-[#191970] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[#15155e] transition"
+              >
+                Logout
+              </button>
+            </div>
           </div>
         </div>
-      </nav>
-    </header>
+        </nav>
+      </header>
+      <div aria-hidden="true" className="h-[88px] sm:h-[98px] lg:h-[112px]" />
+    </>
   );
 }

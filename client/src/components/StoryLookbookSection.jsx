@@ -3,7 +3,7 @@
  * On hover, the hovered panel expands to the same width as the first panel.
  */
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import sareeImage from '../assets/images/saree.webp';
 import sareeImage2 from '../assets/images/sareeImage2.webp';
 import sareeImage3 from '../assets/images/sareeimage3.jpg';
@@ -48,6 +48,15 @@ const PANELS = [
 
 export default function StoryLookbookSection() {
   const [hoveredId, setHoveredId] = useState(null);
+  const [isMobile, setIsMobile] = useState(
+    typeof window !== 'undefined' ? window.innerWidth < 640 : false
+  );
+
+  useEffect(() => {
+    const onResize = () => setIsMobile(window.innerWidth < 640);
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, []);
 
   return (
     <section
@@ -56,10 +65,8 @@ export default function StoryLookbookSection() {
     >
       <div className="flex h-[400px] sm:h-[480px] md:h-[520px] lg:h-[560px]">
         {PANELS.map((panel) => {
-          const isHovered = hoveredId === panel.id;
           const isFirst = panel.id === PANELS[0].id;
-          // First panel width when expanded: use same flex as "expanded" state
-          const expanded = isHovered || (isFirst && hoveredId === null);
+          const expanded = hoveredId === panel.id || (isFirst && hoveredId === null);
 
           return (
             <a
@@ -69,8 +76,19 @@ export default function StoryLookbookSection() {
               style={{
                 flex: expanded ? '3 1 38%' : '1 1 15%',
               }}
-              onMouseEnter={() => setHoveredId(panel.id)}
-              onMouseLeave={() => setHoveredId(null)}
+              onMouseEnter={() => {
+                if (!isMobile) setHoveredId(panel.id);
+              }}
+              onMouseLeave={() => {
+                if (!isMobile) setHoveredId(null);
+              }}
+              onClick={(e) => {
+                e.preventDefault();
+                setHoveredId((prev) => (prev === panel.id ? null : panel.id));
+              }}
+              onFocus={() => {
+                if (!isMobile) setHoveredId(panel.id);
+              }}
             >
               <div
                 className={`absolute inset-0 bg-cover bg-center bg-no-repeat transition-[transform,filter] duration-1000 ease-in-out group-hover:scale-105 ${panel.grayscale ? 'grayscale' : ''} ${expanded && panel.grayscale ? 'grayscale-0' : ''}`}

@@ -1,4 +1,5 @@
 import { body } from 'express-validator';
+import { param } from 'express-validator';
 
 export const addToCartValidator = [
   body('productId').isMongoId(),
@@ -11,3 +12,4 @@ export const updateCartItemValidator = [
 ];
 
 export const removeCartItemValidator = [body('productId').isMongoId()];
+export const removeCartItemByParamValidator = [param('productId').isMongoId()];

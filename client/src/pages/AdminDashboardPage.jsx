@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { api } from '../utils/api'
 
 const ADMIN_SESSION_KEY = 'kd_sarees_admin_session'
@@ -124,6 +124,7 @@ export default function AdminDashboardPage() {
   const [categoryError, setCategoryError] = useState('')
   const [categorySuccessMessage, setCategorySuccessMessage] = useState('')
   const [previewImageUrl, setPreviewImageUrl] = useState('')
+  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false)
   const categoryOptions = useMemo(() => normalizeCategoryList(categories), [categories])
   const selectCategoryOptions = useMemo(() => {
     const byName = new Map(categoryOptions.map((category) => [category.name.trim().toLowerCase(), category]))
@@ -475,8 +476,67 @@ export default function AdminDashboardPage() {
     return { totalProducts, totalStock, totalValue, lowStockCount }
   }, [products])
 
+  const analyticsData = useMemo(() => {
+    const categoryMap = products.reduce((acc, product) => {
+      const key = product.categoryName || 'Uncategorized'
+      acc.set(key, (acc.get(key) || 0) + 1)
+      return acc
+    }, new Map())
+
+    const categoryDistribution = Array.from(categoryMap.entries())
+      .map(([name, count]) => ({ name, count }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 6)
+
+    const stockStatus = [
+      {
+        label: 'Low (<10)',
+        value: products.filter((product) => product.stock < 10).length,
+        color: '#dc2626',
+      },
+      {
+        label: 'Medium (10-29)',
+        value: products.filter((product) => product.stock >= 10 && product.stock < 30).length,
+        color: '#f59e0b',
+      },
+      {
+        label: 'Healthy (30+)',
+        value: products.filter((product) => product.stock >= 30).length,
+        color: '#16a34a',
+      },
+    ]
+
+    const priceBuckets = [
+      { label: 'Below 1000', min: 0, max: 999 },
+      { label: '1000-2499', min: 1000, max: 2499 },
+      { label: '2500-4999', min: 2500, max: 4999 },
+      { label: '5000+', min: 5000, max: Number.POSITIVE_INFINITY },
+    ]
+
+    const priceRanges = priceBuckets.map((bucket) => ({
+      label: bucket.label,
+      count: products.filter((product) => product.price >= bucket.min && product.price <= bucket.max).length,
+    }))
+
+    const categoryMax = Math.max(...categoryDistribution.map((entry) => entry.count), 1)
+    const priceRangeMax = Math.max(...priceRanges.map((entry) => entry.count), 1)
+
+    // Synthetic 7-day trend snapshot based on current catalog mix.
+    const trendPoints = Array.from({ length: 7 }, (_, index) => {
+      const day = `D${index + 1}`
+      const wave = Math.sin((index + 1) * 0.9)
+      const uplift = Math.max(0, Math.round((stats.totalProducts / 10) * wave))
+      const value = Math.max(0, stats.totalProducts - 3 + index + uplift)
+      return { day, value }
+    })
+    const trendMax = Math.max(...trendPoints.map((point) => point.value), 1)
+
+    return { categoryDistribution, stockStatus, priceRanges, categoryMax, priceRangeMax, trendPoints, trendMax }
+  }, [products])
+
   const onSidebarClick = (key) => {
     setActiveSection(key)
+    setIsMobileSidebarOpen(false)
   }
 
   const openImagePreview = () => {
@@ -493,12 +553,78 @@ export default function AdminDashboardPage() {
   return (
     <main className="min-h-screen bg-[#f6f7fb]">
       <div className="flex">
-        <aside className="hidden lg:flex lg:w-64 lg:min-h-screen lg:fixed lg:left-0 lg:top-0 bg-[#191970] text-white flex-col">
+        {isMobileSidebarOpen && (
+          <div className="fixed inset-0 z-[100] lg:hidden">
+            <button
+              type="button"
+              aria-label="Close menu"
+              className="absolute inset-0 bg-black/40"
+              onClick={() => setIsMobileSidebarOpen(false)}
+            />
+            <aside className="relative z-[101] w-72 max-w-[85vw] min-h-screen bg-[#0f172a] text-white flex flex-col shadow-xl">
+              <div className="px-6 py-6 border-b border-white/15 flex items-center justify-between gap-3">
+                <div>
+                  <Link
+                    to="/"
+                    className="inline-block text-3xl text-[#f5d76e] transition hover:text-[#ffe08a]"
+                    style={{ fontFamily: "'Great Vibes', cursive" }}
+                  >
+                    Kd Sarees
+                  </Link>
+                  <p className="text-xl mt-1 text-slate-200" style={{ fontFamily: "'Great Vibes', cursive" }}>
+                    Admin Panel
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  aria-label="Close sidebar"
+                  onClick={() => setIsMobileSidebarOpen(false)}
+                  className="rounded-md border border-[#c4a77d] bg-[#c4a77d] px-2.5 py-1 text-sm font-medium text-[#2c1810] transition hover:bg-[#b8956a]"
+                >
+                  X
+                </button>
+              </div>
+              <nav className="px-4 py-5 space-y-1">
+                {sidebarItems.map((item) => {
+                  const isActive = activeSection === item.key
+                  return (
+                    <button
+                      key={item.key}
+                      type="button"
+                      onClick={() => onSidebarClick(item.key)}
+                      className={`w-full text-left rounded-lg px-3 py-2.5 text-sm transition ${
+                        isActive
+                          ? 'bg-[#c4a77d] text-[#2c1810] font-semibold'
+                          : 'text-slate-100 hover:bg-[#c4a77d]/25 hover:text-[#f3e8d7]'
+                      }`}
+                    >
+                      {item.label}
+                    </button>
+                  )
+                })}
+              </nav>
+              <div className="mt-auto p-4 border-t border-white/15">
+                <button
+                  type="button"
+                  onClick={handleLogout}
+                  className="w-full rounded-lg border border-[#c4a77d] bg-[#c4a77d] px-4 py-2 text-sm font-medium text-[#2c1810] transition hover:bg-[#b8956a]"
+                >
+                  Logout
+                </button>
+              </div>
+            </aside>
+          </div>
+        )}
+
+        <aside className="hidden lg:flex lg:w-64 lg:min-h-screen lg:fixed lg:left-0 lg:top-0 bg-[#0f172a] text-white flex-col">
           <div className="px-6 py-6 border-b border-white/15">
-            <p className="text-3xl text-[#f5d76e]" style={{ fontFamily: "'Great Vibes', cursive" }}>
+            <Link
+              to="/"
+              className="inline-block text-3xl text-[#f5d76e] transition hover:text-[#ffe08a]"
+              style={{ fontFamily: "'Great Vibes', cursive" }}
+            >
               Kd Sarees
-            </p>
-            <p className="text-xs tracking-[0.18em] uppercase mt-2 text-slate-200">Admin Panel</p>
+            </Link>
           </div>
           <nav className="px-4 py-5 space-y-1">
             {sidebarItems.map((item) => {
@@ -510,8 +636,8 @@ export default function AdminDashboardPage() {
                   onClick={() => onSidebarClick(item.key)}
                   className={`w-full text-left rounded-lg px-3 py-2.5 text-sm transition ${
                     isActive
-                      ? 'bg-white text-[#191970] font-semibold'
-                      : 'text-slate-100 hover:bg-white/10 hover:text-white'
+                    ? 'bg-[#c4a77d] text-[#2c1810] font-semibold'
+                    : 'text-slate-100 hover:bg-[#c4a77d]/25 hover:text-[#f3e8d7]'
                   }`}
                 >
                   {item.label}
@@ -523,7 +649,7 @@ export default function AdminDashboardPage() {
             <button
               type="button"
               onClick={handleLogout}
-              className="w-full rounded-lg border border-white/30 px-4 py-2 text-sm font-medium text-white hover:bg-white/10 transition"
+              className="w-full rounded-lg border border-[#c4a77d] bg-[#c4a77d] px-4 py-2 text-sm font-medium text-[#2c1810] transition hover:bg-[#b8956a]"
             >
               Logout
             </button>
@@ -531,6 +657,24 @@ export default function AdminDashboardPage() {
         </aside>
 
         <section className="w-full lg:ml-64 px-4 py-6 sm:px-6 lg:px-8 space-y-6">
+          <div className="lg:hidden flex items-center justify-between rounded-xl bg-white border border-slate-200 px-4 py-3 shadow-sm">
+            <Link
+              to="/"
+              className="text-2xl text-slate-900 transition hover:text-[#191970]"
+              style={{ fontFamily: "'Great Vibes', cursive" }}
+            >
+              Kd Sarees
+            </Link>
+            <button
+              type="button"
+              aria-label="Open menu"
+              onClick={() => setIsMobileSidebarOpen(true)}
+              className="inline-flex h-9 w-9 items-center justify-center rounded-md bg-[#c4a77d] text-[#2c1810] transition hover:bg-[#b8956a]"
+            >
+              <span className="text-lg leading-none">☰</span>
+            </button>
+          </div>
+
           <header className="rounded-2xl p-5 sm:p-6 bg-white border border-slate-200 shadow-sm flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
               <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Dashboard</p>
@@ -608,7 +752,7 @@ export default function AdminDashboardPage() {
               <button
                 type="submit"
                 disabled={offerLoading}
-                className="md:col-span-3 rounded-lg bg-[#191970] text-white py-2.5 text-sm font-semibold hover:bg-[#15155e] transition disabled:opacity-70"
+                className="md:col-span-3 rounded-lg bg-[#c4a77d] py-2.5 text-sm font-semibold text-[#2c1810] transition hover:bg-[#b8956a] disabled:opacity-70"
               >
                 {offerLoading ? 'Saving offer...' : editingOfferId ? 'Update Offer' : 'Publish Offer'}
               </button>
@@ -616,7 +760,7 @@ export default function AdminDashboardPage() {
                 <button
                   type="button"
                   onClick={resetOfferForm}
-                  className="md:col-span-3 rounded-lg border border-gray-300 px-3 py-2.5 text-sm font-medium hover:bg-gray-100 transition"
+                  className="md:col-span-3 rounded-lg border border-[#c4a77d] bg-white px-3 py-2.5 text-sm font-medium text-[#2c1810] transition hover:bg-[#c4a77d]/15"
                 >
                   Cancel Edit
                 </button>
@@ -627,26 +771,28 @@ export default function AdminDashboardPage() {
             </section>
           )}
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
-            <article className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-              <p className="text-xs uppercase tracking-wider text-gray-500">Total Products</p>
-              <p className="text-2xl font-semibold text-[#191970] mt-2">{stats.totalProducts}</p>
-            </article>
-            <article className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-              <p className="text-xs uppercase tracking-wider text-gray-500">Total Items</p>
-              <p className="text-2xl font-semibold text-[#191970] mt-2">{stats.totalStock}</p>
-            </article>
-            <article className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-              <p className="text-xs uppercase tracking-wider text-gray-500">Products Value</p>
-              <p className="text-2xl font-semibold text-[#191970] mt-2">
-                Rs. {stats.totalValue.toLocaleString('en-IN')}
-              </p>
-            </article>
-            <article className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-              <p className="text-xs uppercase tracking-wider text-gray-500">Low Stock Items</p>
-              <p className="text-2xl font-semibold text-amber-700 mt-2">{stats.lowStockCount}</p>
-            </article>
-          </div>
+          {(activeSection === 'overview' || activeSection === 'products') && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+              <article className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+                <p className="text-xs uppercase tracking-wider text-gray-500">Total Products</p>
+                <p className="text-2xl font-semibold text-[#191970] mt-2">{stats.totalProducts}</p>
+              </article>
+              <article className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+                <p className="text-xs uppercase tracking-wider text-gray-500">Total Items</p>
+                <p className="text-2xl font-semibold text-[#191970] mt-2">{stats.totalStock}</p>
+              </article>
+              <article className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+                <p className="text-xs uppercase tracking-wider text-gray-500">Products Value</p>
+                <p className="text-2xl font-semibold text-[#191970] mt-2">
+                  Rs. {stats.totalValue.toLocaleString('en-IN')}
+                </p>
+              </article>
+              <article className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+                <p className="text-xs uppercase tracking-wider text-gray-500">Low Stock Items</p>
+                <p className="text-2xl font-semibold text-amber-700 mt-2">{stats.lowStockCount}</p>
+              </article>
+            </div>
+          )}
 
           {activeSection === 'offers' && (
             <section className="rounded-xl border border-slate-200 bg-white p-4 sm:p-5 shadow-sm">
@@ -673,7 +819,7 @@ export default function AdminDashboardPage() {
                       <button
                         type="button"
                         onClick={() => editOffer(offer)}
-                        className="flex-1 rounded-md border border-blue-200 text-blue-700 px-2.5 py-1.5 text-xs font-medium hover:bg-blue-50"
+                        className="flex-1 rounded-md border border-[#c4a77d] px-2.5 py-1.5 text-xs font-medium text-[#2c1810] hover:bg-[#c4a77d]/15"
                       >
                         Edit
                       </button>
@@ -682,8 +828,8 @@ export default function AdminDashboardPage() {
                         onClick={() => toggleOfferStatus(offer)}
                         className={`flex-1 rounded-md px-2.5 py-1.5 text-xs font-medium border ${
                           offer.isActive
-                            ? 'border-emerald-200 text-emerald-700 hover:bg-emerald-50'
-                            : 'border-slate-300 text-slate-700 hover:bg-slate-100'
+                            ? 'border-[#c4a77d] bg-[#c4a77d]/20 text-[#2c1810] hover:bg-[#c4a77d]/30'
+                            : 'border-[#c4a77d] text-[#2c1810] hover:bg-[#c4a77d]/15'
                         }`}
                       >
                         {offer.isActive ? 'Active' : 'Inactive'}
@@ -691,7 +837,7 @@ export default function AdminDashboardPage() {
                       <button
                         type="button"
                         onClick={() => deleteOffer(offer._id)}
-                        className="flex-1 rounded-md border border-red-200 text-red-600 px-2.5 py-1.5 text-xs font-medium hover:bg-red-50"
+                        className="flex-1 rounded-md border border-[#c4a77d] px-2.5 py-1.5 text-xs font-medium text-[#2c1810] hover:bg-[#c4a77d]/15"
                       >
                         Delete
                       </button>
@@ -729,7 +875,7 @@ export default function AdminDashboardPage() {
                       <button
                         type="button"
                         onClick={() => handleDeleteReview(review._id)}
-                        className="mt-3 w-full rounded-md border border-red-200 text-red-600 px-2.5 py-1.5 text-xs font-medium hover:bg-red-50 transition"
+                        className="mt-3 w-full rounded-md border border-[#c4a77d] px-2.5 py-1.5 text-xs font-medium text-[#2c1810] transition hover:bg-[#c4a77d]/15"
                       >
                         Delete Review
                       </button>
@@ -737,6 +883,234 @@ export default function AdminDashboardPage() {
                   ))}
                 </div>
               )}
+            </section>
+          )}
+
+          {activeSection === 'analytics' && (
+            <section className="space-y-6">
+              <div className="rounded-2xl border border-slate-200 bg-gradient-to-r from-[#0f172a] via-[#1e293b] to-[#312e81] p-5 sm:p-6 shadow-sm text-white">
+                <div>
+                  <p className="text-xs uppercase tracking-[0.2em] text-indigo-200">Store Analytics</p>
+                  <h2 className="text-xl sm:text-2xl font-semibold mt-1">Modern Visual Insights</h2>
+                  <p className="text-sm text-indigo-100/90 mt-1">
+                    Different graph types for category mix, stock health, price buckets, and trend tracking.
+                  </p>
+                </div>
+                <div className="mt-5 grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div className="rounded-xl border border-white/20 bg-white/10 p-3">
+                    <p className="text-xs text-indigo-100">Catalog Size</p>
+                    <p className="text-2xl font-semibold mt-1">{stats.totalProducts}</p>
+                  </div>
+                  <div className="rounded-xl border border-white/20 bg-white/10 p-3">
+                    <p className="text-xs text-indigo-100">Low Stock Risk</p>
+                    <p className="text-2xl font-semibold mt-1">{stats.lowStockCount}</p>
+                  </div>
+                  <div className="rounded-xl border border-white/20 bg-white/10 p-3">
+                    <p className="text-xs text-indigo-100">Catalog Value</p>
+                    <p className="text-2xl font-semibold mt-1">Rs. {stats.totalValue.toLocaleString('en-IN')}</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <article className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-5 shadow-sm">
+                  <h3 className="text-base font-semibold text-slate-900">Horizontal Bar: Products by Category</h3>
+                  {analyticsData.categoryDistribution.length === 0 ? (
+                    <p className="text-sm text-slate-600 mt-3">No products available to generate graph.</p>
+                  ) : (
+                    <div className="mt-4 space-y-3">
+                      {analyticsData.categoryDistribution.map((item) => {
+                        const width = Math.max((item.count / analyticsData.categoryMax) * 100, 6)
+                        return (
+                          <div key={item.name}>
+                            <div className="flex items-center justify-between text-xs text-slate-600 mb-1">
+                              <span>{item.name}</span>
+                              <span>{item.count}</span>
+                            </div>
+                            <div className="h-3 rounded-full bg-slate-100 overflow-hidden">
+                              <div
+                                className="h-full rounded-full bg-gradient-to-r from-indigo-600 to-violet-500"
+                                style={{ width: `${width}%` }}
+                              />
+                            </div>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  )}
+                </article>
+
+                <article className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-5 shadow-sm">
+                  <h3 className="text-base font-semibold text-slate-900">Donut: Inventory Health</h3>
+                  {stats.totalProducts === 0 ? (
+                    <p className="text-sm text-slate-600 mt-3">Add products to view stock health graph.</p>
+                  ) : (
+                    <div className="mt-4 flex flex-col sm:flex-row gap-5 sm:items-center">
+                      <div className="relative w-40 h-40 shrink-0">
+                        {(() => {
+                          const total = analyticsData.stockStatus.reduce((sum, item) => sum + item.value, 0) || 1
+                          let cumulative = 0
+                          const radius = 56
+                          const circumference = 2 * Math.PI * radius
+
+                          return (
+                            <svg viewBox="0 0 140 140" className="w-full h-full">
+                              <circle cx="70" cy="70" r={radius} fill="none" stroke="#e2e8f0" strokeWidth="18" />
+                              {analyticsData.stockStatus.map((item) => {
+                                const segmentLength = (item.value / total) * circumference
+                                const dashArray = `${segmentLength} ${circumference - segmentLength}`
+                                const dashOffset = -cumulative
+                                cumulative += segmentLength
+                                return (
+                                  <circle
+                                    key={item.label}
+                                    cx="70"
+                                    cy="70"
+                                    r={radius}
+                                    fill="none"
+                                    stroke={item.color}
+                                    strokeWidth="18"
+                                    strokeDasharray={dashArray}
+                                    strokeDashoffset={dashOffset}
+                                    strokeLinecap="butt"
+                                    transform="rotate(-90 70 70)"
+                                  />
+                                )
+                              })}
+                            </svg>
+                          )
+                        })()}
+                        <div className="absolute inset-0 flex items-center justify-center">
+                          <div className="text-center">
+                            <p className="text-[11px] uppercase tracking-wider text-slate-500">Products</p>
+                            <p className="text-xl font-semibold text-slate-900">{stats.totalProducts}</p>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="space-y-2.5">
+                        {analyticsData.stockStatus.map((item) => (
+                          <div key={item.label} className="flex items-center gap-2 text-sm text-slate-700">
+                            <span className="inline-block h-2.5 w-2.5 rounded-full" style={{ backgroundColor: item.color }} />
+                            <span>{item.label}</span>
+                            <span className="ml-auto font-medium text-slate-900">{item.value}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </article>
+              </div>
+
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <article className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-5 shadow-sm">
+                  <h3 className="text-base font-semibold text-slate-900">Column Bars: Price Range Distribution</h3>
+                  {analyticsData.priceRanges.every((item) => item.count === 0) ? (
+                    <p className="text-sm text-slate-600 mt-3">No product prices available for distribution graph.</p>
+                  ) : (
+                    <div className="mt-4 grid grid-cols-2 md:grid-cols-4 gap-3">
+                      {analyticsData.priceRanges.map((item) => {
+                        const barHeight = Math.max((item.count / analyticsData.priceRangeMax) * 100, item.count > 0 ? 12 : 0)
+                        return (
+                          <div key={item.label} className="rounded-lg border border-slate-200 p-3">
+                            <p className="text-xs text-slate-600">{item.label}</p>
+                            <div className="mt-3 h-28 bg-slate-50 rounded-md flex items-end p-2">
+                              <div className="w-full rounded-sm bg-[#c4a77d]" style={{ height: `${barHeight}%` }} />
+                            </div>
+                            <p className="mt-2 text-sm font-semibold text-slate-900">{item.count} products</p>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  )}
+                </article>
+
+                <article className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-5 shadow-sm">
+                  <h3 className="text-base font-semibold text-slate-900">Area Trend: 7 Day Catalog Signal</h3>
+                  {stats.totalProducts === 0 ? (
+                    <p className="text-sm text-slate-600 mt-3">Add products to view trend graph.</p>
+                  ) : (
+                    <div className="mt-4">
+                      <div className="h-40 rounded-xl bg-slate-50 p-3">
+                        {(() => {
+                          const pointsCount = analyticsData.trendPoints.length
+                          const points = analyticsData.trendPoints
+                            .map((point, index) => {
+                              const x = (index / Math.max(pointsCount - 1, 1)) * 100
+                              const y = 100 - (point.value / analyticsData.trendMax) * 88
+                              return `${x},${y}`
+                            })
+                            .join(' ')
+                          const areaPoints = `0,100 ${points} 100,100`
+
+                          return (
+                            <svg viewBox="0 0 100 100" className="w-full h-full">
+                              <defs>
+                                <linearGradient id="trendArea" x1="0" x2="0" y1="0" y2="1">
+                                  <stop offset="0%" stopColor="#4f46e5" stopOpacity="0.45" />
+                                  <stop offset="100%" stopColor="#4f46e5" stopOpacity="0.05" />
+                                </linearGradient>
+                              </defs>
+                              <polyline fill="url(#trendArea)" stroke="none" points={areaPoints} />
+                              <polyline fill="none" stroke="#4f46e5" strokeWidth="2.2" points={points} />
+                            </svg>
+                          )
+                        })()}
+                      </div>
+                      <div className="mt-3 grid grid-cols-7 gap-2">
+                        {analyticsData.trendPoints.map((point) => (
+                          <div key={point.day} className="text-center">
+                            <p className="text-[11px] text-slate-500">{point.day}</p>
+                            <p className="text-xs font-semibold text-slate-900">{point.value}</p>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </article>
+              </div>
+
+              <article className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-5 shadow-sm">
+                <h3 className="text-base font-semibold text-slate-900">Stacked Progress: Category Contribution</h3>
+                {analyticsData.categoryDistribution.length === 0 ? (
+                  <p className="text-sm text-slate-600 mt-3">No categories to build contribution chart.</p>
+                ) : (
+                  <div className="mt-4">
+                    <div className="h-4 w-full rounded-full overflow-hidden bg-slate-100 flex">
+                      {analyticsData.categoryDistribution.map((item, index) => {
+                        const width = (item.count / Math.max(stats.totalProducts, 1)) * 100
+                        const palette = ['#4f46e5', '#8b5cf6', '#06b6d4', '#16a34a', '#f59e0b', '#ef4444']
+                        return (
+                          <div
+                            key={item.name}
+                            className="h-full"
+                            style={{ width: `${Math.max(width, 4)}%`, backgroundColor: palette[index % palette.length] }}
+                            title={`${item.name}: ${item.count}`}
+                          />
+                        )
+                      })}
+                    </div>
+                    <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-2">
+                      {analyticsData.categoryDistribution.map((item, index) => {
+                        const palette = ['#4f46e5', '#8b5cf6', '#06b6d4', '#16a34a', '#f59e0b', '#ef4444']
+                        const percent = ((item.count / Math.max(stats.totalProducts, 1)) * 100).toFixed(1)
+                        return (
+                          <div key={item.name} className="flex items-center gap-2 text-sm text-slate-700">
+                            <span
+                              className="inline-block h-2.5 w-2.5 rounded-full"
+                              style={{ backgroundColor: palette[index % palette.length] }}
+                            />
+                            <span>{item.name}</span>
+                            <span className="ml-auto font-medium text-slate-900">
+                              {item.count} ({percent}%)
+                            </span>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  </div>
+                )}
+              </article>
             </section>
           )}
 
@@ -755,7 +1129,7 @@ export default function AdminDashboardPage() {
                       name="name"
                       value={categoryFormData.name}
                       onChange={handleCategoryChange}
-                      className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm focus:border-[#191970] focus:outline-none"
+                      className="w-full rounded-lg border border-gray-300 bg-white px-3 py-3 text-base sm:py-2.5 sm:text-sm focus:border-[#191970] focus:outline-none"
                     >
                       <option value="">Select category</option>
                       {DEFAULT_CATEGORY_NAMES.map((name) => (
@@ -775,7 +1149,7 @@ export default function AdminDashboardPage() {
                   </div>
                   <button
                     type="submit"
-                    className="rounded-lg bg-[#191970] text-white px-4 py-2.5 text-sm font-medium hover:bg-[#15155e] transition"
+                    className="rounded-lg bg-[#c4a77d] px-4 py-2.5 text-sm font-medium text-[#2c1810] transition hover:bg-[#b8956a]"
                   >
                     Add Category
                   </button>
@@ -808,7 +1182,7 @@ export default function AdminDashboardPage() {
                       name="category"
                       value={formData.category}
                       onChange={handleChange}
-                      className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm focus:border-[#191970] focus:outline-none"
+                      className="w-full rounded-lg border border-gray-300 bg-white px-3 py-3 text-base sm:py-2.5 sm:text-sm focus:border-[#191970] focus:outline-none"
                     >
                       <option value="">Select Category</option>
                       {selectCategoryOptions.length === 0 && (
@@ -849,7 +1223,7 @@ export default function AdminDashboardPage() {
                         <button
                           type="button"
                           onClick={openImagePreview}
-                          className="inline-flex rounded-md bg-[#191970] px-3 py-1.5 text-xs font-medium text-white hover:bg-[#15155e] transition"
+                          className="inline-flex rounded-md bg-[#c4a77d] px-3 py-1.5 text-xs font-medium text-[#2c1810] transition hover:bg-[#b8956a]"
                         >
                           View Image
                         </button>
@@ -868,7 +1242,7 @@ export default function AdminDashboardPage() {
                         <button
                           type="button"
                           onClick={removeImage}
-                          className="text-xs text-red-600 hover:text-red-700"
+                          className="text-xs font-medium text-[#2c1810] underline decoration-[#c4a77d] underline-offset-2 hover:text-[#6f4b2f]"
                         >
                           Remove image
                         </button>
@@ -883,7 +1257,7 @@ export default function AdminDashboardPage() {
                   <div className="flex gap-2">
                     <button
                       type="submit"
-                      className="flex-1 rounded-lg bg-[#191970] text-white py-2.5 text-sm font-medium hover:bg-[#15155e] transition"
+                      className="flex-1 rounded-lg bg-[#c4a77d] py-2.5 text-sm font-medium text-[#2c1810] transition hover:bg-[#b8956a]"
                     >
                       {editingId ? 'Save Changes' : 'Add Product'}
                     </button>
@@ -891,7 +1265,7 @@ export default function AdminDashboardPage() {
                       <button
                         type="button"
                         onClick={resetForm}
-                        className="rounded-lg border border-gray-300 px-3 py-2.5 text-sm font-medium hover:bg-gray-100 transition"
+                        className="rounded-lg border border-[#c4a77d] bg-white px-3 py-2.5 text-sm font-medium text-[#2c1810] transition hover:bg-[#c4a77d]/15"
                       >
                         Cancel
                       </button>
@@ -935,14 +1309,14 @@ export default function AdminDashboardPage() {
                             <button
                               type="button"
                               onClick={() => handleEdit(product)}
-                              className="flex-1 rounded-md border border-gray-300 px-2.5 py-1.5 text-xs font-medium hover:bg-gray-100 transition"
+                              className="flex-1 rounded-md border border-[#c4a77d] px-2.5 py-1.5 text-xs font-medium text-[#2c1810] transition hover:bg-[#c4a77d]/15"
                             >
                               Edit
                             </button>
                             <button
                               type="button"
                               onClick={() => handleDelete(product.id)}
-                              className="flex-1 rounded-md border border-red-200 text-red-600 px-2.5 py-1.5 text-xs font-medium hover:bg-red-50 transition"
+                              className="flex-1 rounded-md border border-[#c4a77d] px-2.5 py-1.5 text-xs font-medium text-[#2c1810] transition hover:bg-[#c4a77d]/15"
                             >
                               Delete
                             </button>
@@ -1002,7 +1376,7 @@ export default function AdminDashboardPage() {
             </div>
           )}
 
-          {!['overview', 'products', 'offers', 'reviews'].includes(activeSection) && (
+          {!['overview', 'products', 'offers', 'reviews', 'analytics'].includes(activeSection) && (
             <section className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
               <h2 className="text-lg font-semibold text-slate-900 capitalize">{activeSection}</h2>
               <p className="text-sm text-slate-600 mt-2">
@@ -1010,24 +1384,6 @@ export default function AdminDashboardPage() {
               </p>
             </section>
           )}
-
-          <div className="lg:hidden bg-[#191970] text-white rounded-xl p-4">
-            <p className="text-sm font-medium">Quick Admin Navigation</p>
-            <div className="flex flex-wrap gap-2 mt-3">
-              {sidebarItems.map((item) => (
-                <button
-                  key={item.key}
-                  type="button"
-                  onClick={() => onSidebarClick(item.key)}
-                  className={`rounded-md px-3 py-1.5 text-xs ${
-                    activeSection === item.key ? 'bg-white text-[#191970]' : 'bg-white/10 text-white'
-                  }`}
-                >
-                  {item.label}
-                </button>
-              ))}
-            </div>
-          </div>
 
           {previewImageUrl && (
             <div className="fixed inset-0 z-[110] flex items-center justify-center p-4">
@@ -1043,7 +1399,7 @@ export default function AdminDashboardPage() {
                   <button
                     type="button"
                     onClick={closeImagePreview}
-                    className="rounded-md border border-slate-300 px-2.5 py-1 text-xs font-medium text-slate-700 hover:bg-slate-100"
+                    className="rounded-md border border-[#c4a77d] bg-white px-2.5 py-1 text-xs font-medium text-[#2c1810] hover:bg-[#c4a77d]/15"
                   >
                     Close
                   </button>

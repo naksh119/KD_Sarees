@@ -1,10 +1,12 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { FaBoxOpen, FaMapMarkerAlt, FaSignOutAlt, FaUserCircle } from 'react-icons/fa'
+import { FaBoxOpen, FaHeart, FaMapMarkerAlt, FaSignOutAlt, FaUserCircle } from 'react-icons/fa'
 import { IoArrowBack } from 'react-icons/io5'
 import Navbar from '../components/Navbar'
 import ConfirmPopup from '../components/ConfirmPopup'
+import ProductCard from '../components/ProductCard'
 import { api } from '../utils/api'
+import { getFavorites, removeFavoriteById, toggleFavorite } from '../utils/favorites'
 
 const ADMIN_SESSION_KEY = 'kd_sarees_admin_session'
 const USER_TOKEN_KEY = 'kd_sarees_token'
@@ -32,10 +34,22 @@ export default function UserInfoPage() {
   const [message, setMessage] = useState('')
   const [error, setError] = useState('')
   const [orders, setOrders] = useState([])
+  const [favorites, setFavorites] = useState([])
+  const [deleteFavoriteTarget, setDeleteFavoriteTarget] = useState(null)
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false)
 
   const token = localStorage.getItem(USER_TOKEN_KEY)
   const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'https://kd-sarees.onrender.com'
+
+  useEffect(() => {
+    const syncFavorites = () => {
+      setFavorites(getFavorites())
+    }
+
+    syncFavorites()
+    window.addEventListener('favorites:changed', syncFavorites)
+    return () => window.removeEventListener('favorites:changed', syncFavorites)
+  }, [])
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -153,10 +167,16 @@ export default function UserInfoPage() {
     }
   }
 
+  const handleDeleteFavorite = async (product) => {
+    const nextFavorites = await removeFavoriteById(product?.id)
+    setFavorites(nextFavorites)
+    setDeleteFavoriteTarget(null)
+  }
+
   return (
     <>
       <Navbar />
-      <main className="h-[calc(100vh-130px)] overflow-hidden bg-[#f7f7f8] px-4 py-3 md:px-8 lg:px-10">
+      <main className="min-h-[calc(100vh-130px)] bg-[#f7f7f8] px-4 py-3 md:px-8 lg:px-10">
         <div className="max-w-[1280px] mx-auto">
           <Link
             to="/"
@@ -166,8 +186,8 @@ export default function UserInfoPage() {
             Continue Shopping
           </Link>
 
-          <section className="mt-3 h-[calc(100%-32px)] rounded-xl border border-gray-200 bg-white p-4 sm:p-5 lg:p-6">
-            <div className="h-full flex flex-col gap-6 lg:flex-row">
+          <section className="mt-3 rounded-xl border border-gray-200 bg-white p-4 sm:p-5 lg:p-6">
+            <div className="flex flex-col gap-6 lg:flex-row">
               <aside className="w-full lg:w-72">
                 <div className="space-y-3">
                   <button
@@ -211,6 +231,19 @@ export default function UserInfoPage() {
 
                   <button
                     type="button"
+                    onClick={() => setActiveSection('favorites')}
+                    className={`w-full flex items-center gap-3 rounded-lg px-4 py-3 text-sm font-medium border transition ${
+                      activeSection === 'favorites'
+                        ? 'bg-blue-50 border-blue-200 text-blue-700'
+                        : 'bg-gray-50 border-gray-200 text-gray-700 hover:bg-gray-100'
+                    }`}
+                  >
+                    <FaHeart />
+                    Favorites
+                  </button>
+
+                  <button
+                    type="button"
                     onClick={() => setShowLogoutConfirm(true)}
                     className="w-full flex items-center gap-3 rounded-lg px-4 py-3 text-sm font-medium border border-gray-200 bg-gray-50 text-gray-700 hover:bg-gray-100 transition"
                   >
@@ -220,7 +253,7 @@ export default function UserInfoPage() {
                 </div>
               </aside>
 
-              <div className="flex-1 h-full overflow-y-auto rounded-lg border border-gray-200 bg-white px-4 py-5 sm:px-6 sm:py-6">
+              <div className="min-w-0 flex-1 rounded-lg border border-gray-200 bg-white px-4 py-5 sm:px-6 sm:py-6">
                 {activeSection === 'orders' && (
                   <div className="h-full min-h-[420px] flex flex-col">
                     <h2 className="inline-block w-fit border-b border-gray-300 pb-2 text-lg font-medium text-gray-800">
@@ -251,6 +284,44 @@ export default function UserInfoPage() {
                             <p className="text-xs text-gray-600">Payment: {order.paymentStatus}</p>
                             <p className="text-sm font-semibold mt-1">Rs. {Number(order.totalAmount || 0).toLocaleString('en-IN')}</p>
                           </article>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {activeSection === 'favorites' && (
+                  <div className="h-full min-h-[420px]">
+                    <h2 className="inline-block w-fit border-b border-gray-300 pb-2 text-lg font-medium text-gray-800">
+                      Favorites
+                    </h2>
+                    {favorites.length === 0 ? (
+                      <div className="mt-8 rounded-lg border border-gray-200 bg-gray-50 p-5 text-sm text-gray-700">
+                        No favorites yet. Tap the heart on any product card to save it here.
+                      </div>
+                    ) : (
+                      <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                        {favorites.map((product) => (
+                          <ProductCard
+                            key={product.id}
+                            id={product.id}
+                            imageSrc={product.imageSrc}
+                            imageSrcHover={product.imageSrcHover}
+                            imageAlt={product.imageAlt}
+                            productTitle={product.productTitle}
+                            originalPrice={product.originalPrice}
+                            currentPrice={product.currentPrice}
+                            discountPercentage={product.discountPercentage}
+                            rating={product.rating}
+                            reviewCount={product.reviewCount}
+                            isSale={product.isSale}
+                            showAddToCartButton={product.showAddToCartButton}
+                            href={product.href}
+                            onToggleFavorite={() => setFavorites(toggleFavorite(product))}
+                            isFavorite
+                            showDeleteIcon
+                            onDelete={() => setDeleteFavoriteTarget(product)}
+                          />
                         ))}
                       </div>
                     )}
@@ -450,6 +521,20 @@ export default function UserInfoPage() {
           </section>
         </div>
       </main>
+      <ConfirmPopup
+        isOpen={Boolean(deleteFavoriteTarget)}
+        title="Remove from favorites?"
+        message={
+          deleteFavoriteTarget?.productTitle
+            ? `"${deleteFavoriteTarget.productTitle}" will be removed from your favorites.`
+            : 'This product will be removed from your favorites.'
+        }
+        confirmText="Yes, remove"
+        cancelText="Cancel"
+        onConfirm={() => handleDeleteFavorite(deleteFavoriteTarget)}
+        onCancel={() => setDeleteFavoriteTarget(null)}
+        isDanger
+      />
       <ConfirmPopup
         isOpen={showLogoutConfirm}
         title="Confirm Logout"

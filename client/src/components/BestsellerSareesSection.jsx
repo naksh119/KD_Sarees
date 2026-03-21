@@ -242,7 +242,7 @@ export default function BestsellerSareesSection({
           {displayProducts.map((product) => (
             <div
               key={product.id}
-              className="shrink-0 w-[260px] sm:w-[280px] lg:w-[300px] snap-start"
+              className="shrink-0 w-full sm:w-[280px] lg:w-[300px] snap-start"
             >
               <ProductCard
                 imageSrc={product.imageSrc}

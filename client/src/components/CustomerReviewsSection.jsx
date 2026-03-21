@@ -334,10 +334,9 @@ const DEFAULT_REVIEWS = [
   },
 ];
 
-const CARD_WIDTH = 160;
+const DESKTOP_CARD_WIDTH = 160;
 const CARD_GAP = 16;
-const CARDS_PER_PAGE = 5;
-const PAGE_WIDTH = CARDS_PER_PAGE * CARD_WIDTH + (CARDS_PER_PAGE - 1) * CARD_GAP; // 864
+const DESKTOP_CARDS_PER_PAGE = 5;
 
 function chunkReviews(reviews, size) {
   const chunks = [];
@@ -396,11 +395,20 @@ function ModalOverlay({
       if (e.key === 'Escape') onClose();
     };
     window.addEventListener('keydown', onKey);
-    const prev = document.body.style.overflow;
+    const prevBodyOverflow = document.body.style.overflow;
+    const prevHtmlOverflow = document.documentElement.style.overflow;
+    const prevHtmlOverscroll = document.documentElement.style.overscrollBehavior;
+
+    // Lock page scroll while modal is open without changing body positioning.
+    document.documentElement.style.overflow = 'hidden';
+    document.documentElement.style.overscrollBehavior = 'none';
     document.body.style.overflow = 'hidden';
+
     return () => {
       window.removeEventListener('keydown', onKey);
-      document.body.style.overflow = prev;
+      document.body.style.overflow = prevBodyOverflow;
+      document.documentElement.style.overflow = prevHtmlOverflow;
+      document.documentElement.style.overscrollBehavior = prevHtmlOverscroll;
     };
   }, [open, onClose]);
 
@@ -408,7 +416,7 @@ function ModalOverlay({
 
   return (
     <div
-      className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 p-4"
+      className="fixed inset-0 z-[100] flex items-start justify-center overflow-y-auto bg-black/45 p-0 sm:items-center sm:p-4"
       role="presentation"
       onClick={onClose}
     >
@@ -416,7 +424,7 @@ function ModalOverlay({
         role="dialog"
         aria-modal="true"
         aria-labelledby="review-modal-title"
-        className={`flex max-h-[90vh] w-full ${panelClassName} flex-col bg-white shadow-xl`}
+        className={`relative mx-auto flex h-full max-h-full w-full overflow-y-auto rounded-none bg-white shadow-xl sm:h-auto sm:max-h-[90vh] ${panelClassName} flex-col`}
         onClick={(e) => e.stopPropagation()}
       >
         <div className={headerClassName}>
@@ -452,6 +460,23 @@ function AddReviewForm({ onSubmit, onCancel }) {
   const [imagePreviewOpen, setImagePreviewOpen] = useState(false);
   const [error, setError] = useState('');
   const [imageError, setImageError] = useState('');
+
+  useEffect(() => {
+    if (!imagePreviewOpen) return;
+    const prevBodyOverflow = document.body.style.overflow;
+    const prevHtmlOverflow = document.documentElement.style.overflow;
+    const prevHtmlOverscroll = document.documentElement.style.overscrollBehavior;
+
+    document.documentElement.style.overflow = 'hidden';
+    document.documentElement.style.overscrollBehavior = 'none';
+    document.body.style.overflow = 'hidden';
+
+    return () => {
+      document.body.style.overflow = prevBodyOverflow;
+      document.documentElement.style.overflow = prevHtmlOverflow;
+      document.documentElement.style.overscrollBehavior = prevHtmlOverscroll;
+    };
+  }, [imagePreviewOpen]);
 
   const handleImageChange = (e) => {
     const file = e.target.files?.[0];
@@ -627,7 +652,7 @@ function AddReviewForm({ onSubmit, onCancel }) {
       </div>
       {imagePreviewOpen && imageSrc ? (
         <div
-          className="fixed inset-0 z-[120] flex items-center justify-center bg-black/70 p-4"
+          className="fixed inset-0 z-[120] flex items-start justify-center overflow-y-auto bg-black/45 p-0 sm:items-center sm:p-4"
           role="presentation"
           onClick={() => setImagePreviewOpen(false)}
         >
@@ -635,7 +660,7 @@ function AddReviewForm({ onSubmit, onCancel }) {
             role="dialog"
             aria-modal="true"
             aria-label="Uploaded image preview"
-            className="relative w-full max-w-lg rounded-xl bg-white p-3 shadow-xl"
+            className="relative h-full w-full rounded-none bg-white p-3 shadow-xl sm:h-auto sm:max-h-[90vh] sm:max-w-lg sm:rounded-xl"
             onClick={(e) => e.stopPropagation()}
           >
             <button
@@ -651,7 +676,7 @@ function AddReviewForm({ onSubmit, onCancel }) {
             <img
               src={imageSrc}
               alt="Uploaded product preview"
-              className="max-h-[70vh] w-full rounded-lg object-contain"
+              className="h-full max-h-[85vh] w-full rounded-lg object-contain sm:max-h-[70vh]"
             />
           </div>
         </div>
@@ -686,9 +711,29 @@ export default function CustomerReviewsSection({
   const [viewAllOpen, setViewAllOpen] = useState(false);
   const [addReviewOpen, setAddReviewOpen] = useState(false);
   const [successOpen, setSuccessOpen] = useState(false);
+  const [loginRequiredPopupOpen, setLoginRequiredPopupOpen] = useState(false);
+  const [viewportWidth, setViewportWidth] = useState(() =>
+    typeof window === 'undefined' ? 1280 : window.innerWidth
+  );
 
   const mergedReviews = useMemo(() => [...reviews, ...userReviews], [reviews, userReviews]);
-  const reviewPages = chunkReviews(mergedReviews, CARDS_PER_PAGE);
+  const isMobile = viewportWidth < 640;
+  const cardsPerPage = isMobile ? 1 : DESKTOP_CARDS_PER_PAGE;
+  const cardWidth = isMobile
+    ? Math.min(300, Math.max(220, viewportWidth - 88))
+    : DESKTOP_CARD_WIDTH;
+  const pageWidth = cardsPerPage * cardWidth + (cardsPerPage - 1) * CARD_GAP;
+  const reviewPages = useMemo(
+    () => chunkReviews(mergedReviews, cardsPerPage),
+    [mergedReviews, cardsPerPage]
+  );
+  const getScrollStep = (el) => (isMobile ? el.clientWidth : pageWidth);
+
+  useEffect(() => {
+    const onResize = () => setViewportWidth(window.innerWidth);
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, []);
 
   const handleAddReview = async (payload) => {
     if (onAddReview) {
@@ -713,6 +758,15 @@ export default function CustomerReviewsSection({
     setSuccessOpen(true);
   };
 
+  const handleAddReviewClick = () => {
+    const hasUserToken = Boolean(localStorage.getItem('kd_sarees_token'));
+    if (!hasUserToken) {
+      setLoginRequiredPopupOpen(true);
+      return;
+    }
+    setAddReviewOpen(true);
+  };
+
   useEffect(() => {
     if (!successOpen) return undefined;
     const timeoutId = window.setTimeout(() => {
@@ -724,20 +778,21 @@ export default function CustomerReviewsSection({
   const scroll = (direction) => {
     if (!scrollRef.current) return;
     const el = scrollRef.current;
+    const step = getScrollStep(el);
     const maxScroll = el.scrollWidth - el.clientWidth;
     if (direction === 'right') {
-      const next = el.scrollLeft + PAGE_WIDTH;
+      const next = el.scrollLeft + step;
       if (next >= maxScroll) {
         el.scrollTo({ left: 0, behavior: 'smooth' });
       } else {
-        el.scrollBy({ left: PAGE_WIDTH, behavior: 'smooth' });
+        el.scrollBy({ left: step, behavior: 'smooth' });
       }
     } else {
-      const prev = el.scrollLeft - PAGE_WIDTH;
+      const prev = el.scrollLeft - step;
       if (prev <= 0) {
         el.scrollTo({ left: maxScroll, behavior: 'smooth' });
       } else {
-        el.scrollBy({ left: -PAGE_WIDTH, behavior: 'smooth' });
+        el.scrollBy({ left: -step, behavior: 'smooth' });
       }
     }
   };
@@ -747,18 +802,19 @@ export default function CustomerReviewsSection({
     const id = setInterval(() => {
       if (!scrollRef.current) return;
       const el = scrollRef.current;
+      const step = getScrollStep(el);
       const maxScroll = el.scrollWidth - el.clientWidth;
       if (maxScroll <= 0) return;
-      const next = el.scrollLeft + PAGE_WIDTH;
+      const next = el.scrollLeft + step;
       if (next >= maxScroll) {
         // Reset to first card when reaching last (instant, then loop continues)
         el.scrollTo({ left: 0, behavior: 'auto' });
       } else {
-        el.scrollBy({ left: PAGE_WIDTH, behavior: 'smooth' });
+        el.scrollBy({ left: step, behavior: 'smooth' });
       }
     }, autoScrollIntervalMs);
     return () => clearInterval(id);
-  }, [isPaused, autoScrollIntervalMs]);
+  }, [isPaused, autoScrollIntervalMs, isMobile, pageWidth]);
 
   return (
     <section
@@ -777,12 +833,12 @@ export default function CustomerReviewsSection({
           open={viewAllOpen}
           onClose={() => setViewAllOpen(false)}
           title="All customer reviews"
-          panelClassName="max-w-[46rem] rounded-xl overflow-hidden"
-          headerClassName="flex shrink-0 items-center justify-between border-b border-[#142a45] bg-[#1e3a5f] px-4 py-3 rounded-t-xl"
-          titleClassName="text-lg font-bold text-white"
-          closeButtonClassName="rounded-lg p-2 text-white/85 transition-colors hover:bg-white/15 hover:text-white"
+          panelClassName="max-w-[46rem] overflow-hidden sm:rounded-xl"
+          headerClassName="flex shrink-0 items-center justify-between border-b border-[#c4a77d] bg-[#c4a77d] px-4 py-3 sm:rounded-t-xl"
+          titleClassName="text-lg font-bold text-[#2c1810]"
+          closeButtonClassName="rounded-lg p-2 text-[#2c1810]/85 transition-colors hover:bg-[#b8956a] hover:text-[#2c1810]"
         >
-          <div className="grid grid-cols-2 gap-6 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
             {mergedReviews.map((review) => (
               <div key={review.id} className="flex justify-center">
                 <ReviewCard
@@ -803,11 +859,11 @@ export default function CustomerReviewsSection({
           open={addReviewOpen}
           onClose={() => setAddReviewOpen(false)}
           title="Write a review"
-          panelClassName="max-w-2xl rounded-2xl border border-[#e6d7c2]"
+          panelClassName="max-w-2xl border border-[#e6d7c2] sm:rounded-2xl"
           bodyClassName="p-4"
-          headerClassName="flex shrink-0 items-center justify-between border-b border-[#142a45] bg-[#1e3a5f] px-4 py-3 rounded-t-2xl"
-          titleClassName="text-lg font-bold text-white"
-          closeButtonClassName="rounded-lg p-2 text-white/85 transition-colors hover:bg-white/15 hover:text-white"
+          headerClassName="flex shrink-0 items-center justify-between border-b border-[#c4a77d] bg-[#c4a77d] px-4 py-3 sm:rounded-t-2xl"
+          titleClassName="text-lg font-bold text-[#2c1810]"
+          closeButtonClassName="rounded-lg p-2 text-[#2c1810]/85 transition-colors hover:bg-[#b8956a] hover:text-[#2c1810]"
         >
           <AddReviewForm
             onSubmit={handleAddReview}
@@ -820,6 +876,13 @@ export default function CustomerReviewsSection({
           onClose={() => setSuccessOpen(false)}
           message="Thank you for your feedback"
         />
+        <ReviewSuccessPopup
+          isOpen={loginRequiredPopupOpen}
+          onClose={() => setLoginRequiredPopupOpen(false)}
+          message="Please login first to submit a review."
+          description="You need to be logged in before adding a review."
+          variant="error"
+        />
 
         <div
           className="relative mt-8 flex justify-center overflow-hidden"
@@ -828,21 +891,23 @@ export default function CustomerReviewsSection({
         >
           <div
             className="relative flex items-center justify-center gap-2 px-2"
-            style={{ width: PAGE_WIDTH + 96 }}
+            style={{ width: isMobile ? '100%' : pageWidth + 96 }}
           >
-            <button
-              type="button"
-              onClick={() => scroll('left')}
-              className="z-10 flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-[#142a45] bg-[#1e3a5f] text-white shadow-md hover:bg-[#254b78] transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[#1e3a5f] focus-visible:ring-offset-2"
-              aria-label="Previous 5 reviews"
-            >
-              <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-              </svg>
-            </button>
+            {!isMobile ? (
+              <button
+                type="button"
+                onClick={() => scroll('left')}
+                className="z-10 flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-[#c4a77d] bg-[#c4a77d] text-[#2c1810] shadow-md hover:bg-[#b8956a] transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[#c4a77d] focus-visible:ring-offset-2"
+                aria-label="Previous 5 reviews"
+              >
+                <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                </svg>
+              </button>
+            ) : null}
             <div
               className="overflow-hidden shrink-0"
-              style={{ width: PAGE_WIDTH }}
+              style={{ width: isMobile ? '100%' : pageWidth }}
             >
               <div
                 ref={scrollRef}
@@ -856,14 +921,14 @@ export default function CustomerReviewsSection({
                 {reviewPages.map((pageReviews, pageIndex) => (
                   <div
                     key={pageIndex}
-                    className="flex shrink-0 snap-start"
+                    className="flex shrink-0 snap-start justify-center"
                     style={{
-                      width: PAGE_WIDTH,
+                      width: isMobile ? '100%' : pageWidth,
                       gap: CARD_GAP,
                     }}
                   >
                     {pageReviews.map((review) => (
-                      <div key={review.id} className="shrink-0" style={{ width: CARD_WIDTH }}>
+                      <div key={review.id} className="shrink-0" style={{ width: cardWidth }}>
                         <ReviewCard
                           imageSrc={review.imageSrc}
                           imageAlt={review.imageAlt}
@@ -879,16 +944,18 @@ export default function CustomerReviewsSection({
                 ))}
               </div>
             </div>
-            <button
-              type="button"
-              onClick={() => scroll('right')}
-              className="z-10 flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-[#142a45] bg-[#1e3a5f] text-white shadow-md hover:bg-[#254b78] transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[#1e3a5f] focus-visible:ring-offset-2"
-              aria-label="Next 5 reviews"
-            >
-              <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-              </svg>
-            </button>
+            {!isMobile ? (
+              <button
+                type="button"
+                onClick={() => scroll('right')}
+                className="z-10 flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-[#c4a77d] bg-[#c4a77d] text-[#2c1810] shadow-md hover:bg-[#b8956a] transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[#c4a77d] focus-visible:ring-offset-2"
+                aria-label="Next 5 reviews"
+              >
+                <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+              </button>
+            ) : null}
           </div>
         </div>
 
@@ -896,14 +963,14 @@ export default function CustomerReviewsSection({
           <button
             type="button"
             onClick={() => setViewAllOpen(true)}
-            className="rounded-md bg-[#c4a77d] px-8 py-2.5 text-sm font-bold uppercase tracking-wide text-[#2c1810] hover:bg-[#b8956a] transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[#c4a77d] focus-visible:ring-offset-2"
+            className="w-40 rounded-md bg-[#c4a77d] px-8 py-2.5 text-sm font-bold uppercase tracking-wide text-[#2c1810] hover:bg-[#b8956a] transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[#c4a77d] focus-visible:ring-offset-2 sm:w-auto"
           >
             View all
           </button>
           <button
             type="button"
-            onClick={() => setAddReviewOpen(true)}
-            className="rounded-md border-2 border-[#c4a77d] bg-white px-8 py-2.5 text-sm font-bold uppercase tracking-wide text-[#2c1810] hover:bg-[#c4a77d]/15 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[#c4a77d] focus-visible:ring-offset-2"
+            onClick={handleAddReviewClick}
+            className="w-40 rounded-md border-2 border-[#c4a77d] bg-white px-8 py-2.5 text-sm font-bold uppercase tracking-wide text-[#2c1810] hover:bg-[#c4a77d]/15 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[#c4a77d] focus-visible:ring-offset-2 sm:w-auto"
           >
             Add review
           </button>

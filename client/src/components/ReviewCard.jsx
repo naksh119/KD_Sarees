@@ -14,7 +14,7 @@ function StarRating({ rating = 0 }) {
       ★
     </span>
   ));
-  return <span className="flex text-xs">{stars}</span>;
+  return <span className="flex text-lg sm:text-xl">{stars}</span>;
 }
 
 export default function ReviewCard({
@@ -27,8 +27,8 @@ export default function ReviewCard({
   productVariant,
 }) {
   return (
-    <article className="flex h-[300px] w-[160px] shrink-0 flex-col overflow-hidden rounded-lg bg-white shadow-md">
-      <div className="flex h-[150px] w-[150px] shrink-0 items-center justify-center self-center overflow-hidden rounded-lg bg-slate-100 mt-[5px]">
+    <article className="flex h-[300px] w-full shrink-0 flex-col overflow-hidden rounded-lg bg-white shadow-md">
+      <div className="mt-[5px] flex h-[150px] w-full max-w-[150px] shrink-0 items-center justify-center self-center overflow-hidden rounded-lg bg-slate-100">
         {imageSrc ? (
           <img
             src={imageSrc}
@@ -43,7 +43,7 @@ export default function ReviewCard({
         <p className="text-xs text-slate-800 line-clamp-3 leading-tight">
           {reviewText}
         </p>
-        <div className="mt-1.5 flex items-center gap-0.5">
+        <div className="mt-1.5 flex items-center justify-center gap-0.5 sm:justify-start">
           <StarRating rating={rating} />
         </div>
         <div className="mt-1.5 flex items-center gap-1 min-w-0">

@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { normalizeEmail, normalizePhone, validateLoginForm } from '../utils/authValidation'
 
 const AUTH_HAS_ACCOUNT_KEY = 'kd_sarees_has_account'
@@ -15,6 +15,7 @@ const highlightItems = [
 
 export default function LoginPage({ isPopup = false, onClose }) {
   const navigate = useNavigate()
+  const location = useLocation()
   const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'https://kd-sarees.onrender.com'
 
   const [formData, setFormData] = useState({
@@ -85,33 +86,49 @@ export default function LoginPage({ isPopup = false, onClose }) {
   }
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center px-4 py-8">
+    <div className="fixed inset-0 z-[100] flex items-start justify-center overflow-y-auto px-0 py-0 md:items-center md:px-4 md:py-8">
       <button
         type="button"
         onClick={onClose || (() => navigate('/'))}
-        className="absolute inset-0 bg-black/35"
+        className="absolute inset-0 hidden bg-black/35 md:block"
         aria-label="Close login popup background"
       />
 
-      <div className="relative z-[101] mx-auto w-full max-w-5xl rounded-2xl bg-white shadow-2xl">
+      <div className="relative z-[101] mx-auto h-full w-full overflow-y-auto bg-white md:h-auto md:max-h-[calc(100vh-2rem)] md:max-w-5xl md:rounded-2xl md:shadow-2xl">
+        <div className="flex items-center justify-between px-5 pt-5 md:hidden">
+          <p
+            className="text-left text-4xl font-normal tracking-normal text-[#4a2f1f]"
+            style={{ fontFamily: "'Great Vibes', cursive" }}
+          >
+            Kd Sarees
+          </p>
+          <button
+            type="button"
+            onClick={onClose || (() => navigate('/'))}
+            className="text-2xl leading-none text-gray-400 transition hover:text-gray-700"
+            aria-label="Close login page"
+          >
+            ×
+          </button>
+        </div>
         <button
           type="button"
           onClick={onClose || (() => navigate('/'))}
-          className="absolute right-4 top-4 text-2xl leading-none text-gray-400 transition hover:text-gray-700"
+          className="absolute right-4 top-4 hidden text-2xl leading-none text-gray-400 transition hover:text-gray-700 md:block"
           aria-label="Close login popup"
         >
           ×
         </button>
 
         <div className="grid md:grid-cols-[1.2fr_1fr]">
-          <section className="rounded-t-2xl bg-[#f5e6c8] px-6 py-10 text-[#4a2f1f] md:rounded-l-2xl md:rounded-tr-none md:px-10">
+          <section className="order-2 bg-[#f5e6c8] px-5 py-8 text-[#4a2f1f] md:order-1 md:rounded-l-2xl md:rounded-tr-none md:px-10 md:py-10">
             <p
-              className="text-5xl font-normal tracking-normal text-[#4a2f1f]"
+              className="hidden text-5xl font-normal tracking-normal text-[#4a2f1f] md:block"
               style={{ fontFamily: "'Great Vibes', cursive" }}
             >
               Kd Sarees
             </p>
-            <p className="mt-4 text-lg font-medium text-[#5a3a28]">Welcome back! Access your account in seconds.</p>
+            <p className="mt-3 text-base font-medium text-[#5a3a28] sm:text-lg">Welcome back! Access your account in seconds.</p>
 
             <div className="mt-8 grid gap-4 sm:grid-cols-3">
               {highlightItems.map((item) => (
@@ -130,8 +147,8 @@ export default function LoginPage({ isPopup = false, onClose }) {
             </div>
           </section>
 
-          <section className="rounded-b-2xl bg-white px-6 py-10 md:rounded-r-2xl md:rounded-bl-none md:px-8">
-            <h1 className="text-center text-3xl font-semibold text-gray-900">Login Now!</h1>
+          <section className="order-1 bg-white px-5 py-8 md:order-2 md:rounded-r-2xl md:rounded-bl-none md:px-8 md:py-10">
+            <h1 className="text-center text-2xl font-semibold text-gray-900 sm:text-3xl">Login Now!</h1>
 
             <form onSubmit={handleSubmit} className="mx-auto mt-6 w-full max-w-sm space-y-4">
               <div>
@@ -183,6 +200,7 @@ export default function LoginPage({ isPopup = false, onClose }) {
               Don&apos;t have an account?{' '}
               <Link
                 to="/signup"
+                state={location.state}
                 onClick={() => localStorage.setItem(AUTH_HAS_ACCOUNT_KEY, 'false')}
                 className="font-medium text-[#0b3da2] hover:text-[#082c75]"
               >

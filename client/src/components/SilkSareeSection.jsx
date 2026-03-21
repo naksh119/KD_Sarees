@@ -23,7 +23,7 @@ export default function SilkSareeSection() {
         <img
           src={silkSareeDesktop}
           alt="Silk Saree collection"
-          className="h-auto w-full object-cover object-center"
+          className="h-[220px] w-full object-cover object-center sm:h-[280px] md:h-auto"
         />
       </button>
     </section>

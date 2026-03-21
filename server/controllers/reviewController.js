@@ -20,14 +20,53 @@ export const getProductReviews = asyncHandler(async (req, res) => {
 
 export const createOrUpdateMyReview = asyncHandler(async (req, res) => {
   const { product, rating, comment, imageSrc } = req.body;
-  const exists = await Product.findById(product);
-  if (!exists) throw new ApiError(404, 'Product not found');
+  console.log('[Review:createOrUpdate] Incoming payload', {
+    product,
+    rating,
+    commentLength: typeof comment === 'string' ? comment.length : null,
+    hasImageSrc: Boolean(imageSrc),
+    userId: req.user?._id,
+  });
 
-  const review = await Review.findOneAndUpdate(
-    { product, user: req.user._id },
-    { rating, comment, imageSrc: imageSrc || '', isApproved: true },
-    { upsert: true, new: true, runValidators: true, setDefaultsOnInsert: true }
-  );
+  const exists = await Product.findById(product);
+  if (!exists) {
+    console.warn('[Review:createOrUpdate] Product not found', {
+      productId: product,
+      userId: req.user?._id,
+    });
+    throw new ApiError(404, 'Product not found');
+  }
+
+  let review;
+  try {
+    review = await Review.findOneAndUpdate(
+      { product, user: req.user._id },
+      { rating, comment, imageSrc: imageSrc || '', isApproved: true },
+      { upsert: true, new: true, runValidators: true, setDefaultsOnInsert: true }
+    );
+  } catch (error) {
+    console.error('[Review:createOrUpdate] Failed to store review', {
+      productId: product,
+      userId: req.user?._id,
+      rating,
+      commentLength: typeof comment === 'string' ? comment.length : null,
+      errorName: error?.name,
+      errorMessage: error?.message,
+      errorCode: error?.code,
+      validationErrors: error?.errors
+        ? Object.fromEntries(
+            Object.entries(error.errors).map(([key, val]) => [key, val?.message])
+          )
+        : null,
+    });
+    throw error;
+  }
+
+  console.log('[Review:createOrUpdate] Review saved successfully', {
+    reviewId: review?._id,
+    productId: product,
+    userId: req.user?._id,
+  });
   res.status(201).json(review);
 });
 

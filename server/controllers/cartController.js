@@ -9,6 +9,14 @@ const getOrCreateCart = async (userId) => {
   return cart;
 };
 
+const getProductSnapshot = (product) => ({
+  priceAtAddTime: product.price,
+  productName: product.name || '',
+  productDescription: product.description || '',
+  productImage: product.images?.[0] || '',
+  productCategory: product.category || null,
+});
+
 export const getMyCart = asyncHandler(async (req, res) => {
   const cart = await getOrCreateCart(req.user._id);
   await cart.populate('items.product', 'name price images stock');
@@ -25,9 +33,13 @@ export const addToCart = asyncHandler(async (req, res) => {
   const idx = cart.items.findIndex((item) => String(item.product) === String(productId));
   if (idx >= 0) {
     cart.items[idx].quantity += Number(quantity);
-    cart.items[idx].priceAtAddTime = product.price;
+    Object.assign(cart.items[idx], getProductSnapshot(product));
   } else {
-    cart.items.push({ product: productId, quantity: Number(quantity), priceAtAddTime: product.price });
+    cart.items.push({
+      product: productId,
+      quantity: Number(quantity),
+      ...getProductSnapshot(product),
+    });
   }
   await cart.save();
   await cart.populate('items.product', 'name price images stock');
@@ -44,14 +56,14 @@ export const updateCartItem = asyncHandler(async (req, res) => {
   const item = cart.items.find((x) => String(x.product) === String(productId));
   if (!item) throw new ApiError(404, 'Item not found in cart');
   item.quantity = Number(quantity);
-  item.priceAtAddTime = product.price;
+  Object.assign(item, getProductSnapshot(product));
   await cart.save();
   await cart.populate('items.product', 'name price images stock');
   res.json(cart);
 });
 
 export const removeCartItem = asyncHandler(async (req, res) => {
-  const { productId } = req.body;
+  const productId = req.params.productId || req.body.productId;
   const cart = await getOrCreateCart(req.user._id);
   cart.items = cart.items.filter((item) => String(item.product) !== String(productId));
   await cart.save();
