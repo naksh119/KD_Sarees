@@ -71,7 +71,7 @@ const DEFAULT_PRODUCTS = [
   },
 ];
 
-export default function ProductSection({ products = DEFAULT_PRODUCTS, viewAllHref = '#' }) {
+export default function ProductSection({ products = DEFAULT_PRODUCTS, viewAllHref = '#', onAddToCart }) {
   return (
     <section
       className="w-full py-12 md:py-16"
@@ -88,6 +88,7 @@ export default function ProductSection({ products = DEFAULT_PRODUCTS, viewAllHre
           {products.map((product) => (
             <ProductCard
               key={product.id}
+              id={product.id}
               imageSrc={product.imageSrc}
               imageSrcHover={product.imageSrcHover}
               imageAlt={product.imageAlt}
@@ -100,6 +101,7 @@ export default function ProductSection({ products = DEFAULT_PRODUCTS, viewAllHre
               isSale={product.isSale}
               showAddToCartButton={product.showAddToCartButton}
               href={product.href}
+              onAddToCart={onAddToCart}
             />
           ))}
         </div>

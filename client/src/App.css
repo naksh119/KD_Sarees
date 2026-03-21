@@ -59,3 +59,55 @@
     transform: translateX(-33.333%);
   }
 }
+
+.offer-ticker-track {
+  animation: offer-ticker-scroll 24s linear infinite;
+}
+
+@keyframes offer-ticker-scroll {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+.offer-countdown-badge {
+  background: linear-gradient(90deg, rgba(245, 215, 110, 0.12), rgba(245, 215, 110, 0.02));
+  box-shadow: 0 0 10px rgba(245, 215, 110, 0.25), inset 0 0 8px rgba(245, 215, 110, 0.12);
+  animation: countdown-badge-glow 1.8s ease-in-out infinite;
+}
+
+.offer-countdown-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: #f5d76e;
+  box-shadow: 0 0 8px rgba(245, 215, 110, 0.9);
+  animation: countdown-dot-pulse 1.2s ease-in-out infinite;
+}
+
+@keyframes countdown-badge-glow {
+  0%,
+  100% {
+    transform: translateY(0);
+    box-shadow: 0 0 10px rgba(245, 215, 110, 0.2), inset 0 0 8px rgba(245, 215, 110, 0.1);
+  }
+  50% {
+    transform: translateY(-1px);
+    box-shadow: 0 0 16px rgba(245, 215, 110, 0.45), inset 0 0 10px rgba(245, 215, 110, 0.2);
+  }
+}
+
+@keyframes countdown-dot-pulse {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.35);
+    opacity: 0.75;
+  }
+}

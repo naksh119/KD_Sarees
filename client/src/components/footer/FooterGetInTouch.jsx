@@ -3,7 +3,7 @@
  */
 
 export default function FooterGetInTouch() {
-  const phone = '+91 9998387686';
+  const phone = '+91 9685187167';
   return (
     <div className="flex flex-col">
       <h3 className="text-sm font-bold uppercase tracking-wide text-white/95">

@@ -6,6 +6,7 @@
  */
 
 export default function ProductCard({
+  id,
   imageSrc,
   imageSrcHover,
   imageAlt,
@@ -18,6 +19,7 @@ export default function ProductCard({
   isSale = false,
   showAddToCartButton = false,
   href = '#',
+  onAddToCart,
 }) {
   const formatPrice = (n) => (n != null ? `₹ ${Number(n).toLocaleString('en-IN')}` : '');
 
@@ -81,7 +83,11 @@ export default function ProductCard({
       {showAddToCartButton && (
         <button
           type="button"
-          onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            if (onAddToCart) onAddToCart(id);
+          }}
           className="absolute left-0 right-0 bottom-0 translate-y-full rounded-lg bg-[#c4a77d] py-3 text-base font-bold uppercase tracking-wide text-[#2c1810] opacity-0 transition-all duration-1000 ease-in-out group-hover:translate-y-0 group-hover:opacity-100 hover:bg-[#b8956a]"
         >
           Add to cart

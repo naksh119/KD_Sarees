@@ -2,7 +2,7 @@
  * Floating chat widget – WhatsApp icon, fixed at bottom-right.
  */
 
-const WHATSAPP_LINK = 'https://api.whatsapp.com/send/?phone=917619357003&text=Hello%21+I+am+interested+in+your+product';
+const WHATSAPP_LINK = 'https://api.whatsapp.com/send/?phone=919685187167&text=Hello%21+I+am+interested+in+your+product';
 
 export default function ChatWidget() {
   return (
