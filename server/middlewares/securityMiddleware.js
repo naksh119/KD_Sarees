@@ -14,6 +14,7 @@ const parseAllowedOrigins = () => {
 
   const defaultOrigins = [
     'http://localhost:5173',
+    'http://localhost:5174',
     'http://localhost:3000',
     'https://kdsarees.netlify.app',
   ];
@@ -69,7 +70,7 @@ export const applySecurityMiddleware = (app) => {
         console.warn(
           `[CORS] Blocked origin: ${origin || '(no origin header)'}`
         );
-        callback(new Error(`CORS blocked for origin: ${origin}`));
+        callback(null, false);
       }
     },
     credentials: true,
