@@ -5,7 +5,7 @@ import { SITE_EMAIL, SITE_PHONE_DISPLAY, SITE_PHONE_TEL, WHATSAPP_URL, PATHS } f
 const PAGE_TITLE =
   'Contact KD Sarees | Customer Care — Sarees, Silk Sarees & Ethnic Wear Online (India)'
 const META_DESCRIPTION =
-  'Contact KD Sarees for saree orders, silk sarees, lehengas, and ethnic wear in India. Customer care via email, phone & WhatsApp. Help with blouse sizing, fabric & colour, and Pan India delivery. Mon–Sat 10 AM–6:30 PM IST.'
+  'Contact KD Sarees for saree orders, silk sarees, and ethnic wear in India. Customer care via email, phone & WhatsApp. Help with blouse sizing, fabric & colour, and Pan India delivery. Mon–Sat 10 AM–6:30 PM IST.'
 const META_KEYWORDS =
   'KD Sarees contact, contact KD Sarees, sarees online India, silk sarees customer care, ethnic wear support, Indian saree store, WhatsApp saree shopping, blouse measurement help, designer sarees enquiry, Pan India saree delivery, traditional wear India'
 
