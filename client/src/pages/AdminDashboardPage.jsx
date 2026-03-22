@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import ConfirmPopup from '../components/ConfirmPopup'
 import { api } from '../utils/api'
@@ -139,6 +139,9 @@ export default function AdminDashboardPage() {
   const [usersError, setUsersError] = useState('')
   const [usersSuccessMessage, setUsersSuccessMessage] = useState('')
   const [userPendingDelete, setUserPendingDelete] = useState(null)
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false)
+  const [adminDeleteLoading, setAdminDeleteLoading] = useState(false)
+  const userDeleteSubmittingRef = useRef(false)
   const categoryOptions = useMemo(() => normalizeCategoryList(categories), [categories])
   const selectCategoryOptions = useMemo(() => {
     const byName = new Map(categoryOptions.map((category) => [category.name.trim().toLowerCase(), category]))
@@ -310,6 +313,7 @@ export default function AdminDashboardPage() {
 
   const handleDeleteCategory = async (id) => {
     resetCategoryMessages()
+    setAdminDeleteLoading(true)
     try {
       await api.deleteCategory(id)
       const categoryData = await api.getCategories()
@@ -320,6 +324,8 @@ export default function AdminDashboardPage() {
       setCategorySuccessMessage('Category deleted successfully.')
     } catch (err) {
       setCategoryError(err.message || 'Unable to delete category')
+    } finally {
+      setAdminDeleteLoading(false)
     }
   }
 
@@ -337,6 +343,7 @@ export default function AdminDashboardPage() {
   }
 
   const handleDelete = async (id) => {
+    setAdminDeleteLoading(true)
     try {
       await api.deleteProduct(id)
       setProducts((prev) => prev.filter((item) => item.id !== id))
@@ -345,6 +352,8 @@ export default function AdminDashboardPage() {
       }
     } catch (err) {
       setError(err.message || 'Unable to delete product')
+    } finally {
+      setAdminDeleteLoading(false)
     }
   }
 
@@ -463,11 +472,14 @@ export default function AdminDashboardPage() {
       return
     }
 
+    setAdminDeleteLoading(true)
     try {
       await api.deleteOffer(id)
       setOffers((prev) => prev.filter((item) => item._id !== id))
     } catch (err) {
       setOfferError(err.message || 'Unable to delete offer')
+    } finally {
+      setAdminDeleteLoading(false)
     }
   }
 
@@ -493,29 +505,38 @@ export default function AdminDashboardPage() {
       return
     }
 
+    setAdminDeleteLoading(true)
     try {
       await api.deleteReview(id)
       setReviews((prev) => prev.filter((review) => review._id !== id))
       setReviewSuccessMessage('Review deleted successfully.')
     } catch (err) {
       setReviewError(err.message || 'Unable to delete review')
+    } finally {
+      setAdminDeleteLoading(false)
     }
   }
 
   const confirmDeleteUser = async () => {
+    if (userDeleteSubmittingRef.current) return
     const user = userPendingDelete
     if (!user) return
-    setUserPendingDelete(null)
+    userDeleteSubmittingRef.current = true
     setUsersError('')
     setUsersSuccessMessage('')
+    setAdminDeleteLoading(true)
     try {
       await api.deleteUser(user._id)
+      setUserPendingDelete(null)
       setUsersSuccessMessage('User deleted.')
       const role = activeSection === 'adminUsers' ? 'admin' : 'user'
       const data = await api.listUsers(role)
       setUsersList(Array.isArray(data) ? data : [])
     } catch (err) {
       setUsersError(err.message || 'Unable to delete user')
+    } finally {
+      userDeleteSubmittingRef.current = false
+      setAdminDeleteLoading(false)
     }
   }
 
@@ -670,7 +691,7 @@ export default function AdminDashboardPage() {
               <div className="mt-auto p-4 border-t border-white/15">
                 <button
                   type="button"
-                  onClick={handleLogout}
+                  onClick={() => setShowLogoutConfirm(true)}
                   className="w-full rounded-lg border border-[#c4a77d] bg-[#c4a77d] px-4 py-2 text-sm font-medium text-[#2c1810] transition hover:bg-[#b8956a]"
                 >
                   Logout
@@ -712,7 +733,7 @@ export default function AdminDashboardPage() {
           <div className="mt-auto p-4 border-t border-white/15">
             <button
               type="button"
-              onClick={handleLogout}
+              onClick={() => setShowLogoutConfirm(true)}
               className="w-full rounded-lg border border-[#c4a77d] bg-[#c4a77d] px-4 py-2 text-sm font-medium text-[#2c1810] transition hover:bg-[#b8956a]"
             >
               Logout
@@ -747,7 +768,7 @@ export default function AdminDashboardPage() {
                 Professional workspace for catalog, orders, customers, and store monitoring.
               </p>
             </div>
-            <span className="text-xs rounded-full bg-emerald-100 text-emerald-700 px-2.5 py-1">Admin Active</span>
+            <span className="text-xs rounded-full bg-emerald-100 px-2.5 py-1 text-emerald-700">Admin Active</span>
           </header>
 
           {activeSection === 'offers' && (
@@ -883,17 +904,17 @@ export default function AdminDashboardPage() {
                       <button
                         type="button"
                         onClick={() => editOffer(offer)}
-                        className="flex-1 rounded-md border border-[#c4a77d] px-2.5 py-1.5 text-xs font-medium text-[#2c1810] hover:bg-[#c4a77d]/15"
+                        className="flex-1 rounded-md bg-[#c4a77d] px-2.5 py-1.5 text-xs font-medium text-[#2c1810] transition-colors hover:bg-[#b8956a]"
                       >
                         Edit
                       </button>
                       <button
                         type="button"
                         onClick={() => toggleOfferStatus(offer)}
-                        className={`flex-1 rounded-md px-2.5 py-1.5 text-xs font-medium border ${
+                        className={`flex-1 rounded-md px-2.5 py-1.5 text-xs font-medium transition-colors ${
                           offer.isActive
-                            ? 'border-[#c4a77d] bg-[#c4a77d]/20 text-[#2c1810] hover:bg-[#c4a77d]/30'
-                            : 'border-[#c4a77d] text-[#2c1810] hover:bg-[#c4a77d]/15'
+                            ? 'bg-[#c4a77d] text-[#2c1810] hover:bg-[#b8956a]'
+                            : 'border border-[#c4a77d] bg-white text-[#2c1810] hover:bg-[#c4a77d]/20'
                         }`}
                       >
                         {offer.isActive ? 'Active' : 'Inactive'}
@@ -901,7 +922,7 @@ export default function AdminDashboardPage() {
                       <button
                         type="button"
                         onClick={() => deleteOffer(offer._id)}
-                        className="flex-1 rounded-md border border-[#c4a77d] px-2.5 py-1.5 text-xs font-medium text-[#2c1810] hover:bg-[#c4a77d]/15"
+                        className="flex-1 rounded-md bg-[#c4a77d] px-2.5 py-1.5 text-xs font-medium text-[#2c1810] transition-colors hover:bg-[#b8956a]"
                       >
                         Delete
                       </button>
@@ -939,7 +960,7 @@ export default function AdminDashboardPage() {
                       <button
                         type="button"
                         onClick={() => handleDeleteReview(review._id)}
-                        className="mt-3 w-full rounded-md border border-[#c4a77d] px-2.5 py-1.5 text-xs font-medium text-[#2c1810] transition hover:bg-[#c4a77d]/15"
+                        className="mt-3 w-full rounded-md bg-[#c4a77d] px-2.5 py-1.5 text-xs font-medium text-[#2c1810] transition-colors hover:bg-[#b8956a]"
                       >
                         Delete Review
                       </button>
@@ -965,17 +986,8 @@ export default function AdminDashboardPage() {
                   </p>
                 </div>
                 <p className="text-xs text-slate-500 flex items-center gap-2 min-h-[1rem]">
-                  {usersLoading ? (
-                    <>
-                      <span
-                        className="inline-block h-4 w-4 shrink-0 animate-spin rounded-full border-2 border-slate-200 border-t-[#c4a77d]"
-                        aria-hidden
-                      />
-                      <span>Loading…</span>
-                    </>
-                  ) : (
-                    `${usersList.length} user${usersList.length === 1 ? '' : 's'}`
-                  )}
+                  {!usersLoading &&
+                    `${usersList.length} user${usersList.length === 1 ? '' : 's'}`}
                 </p>
               </div>
               {usersError && <p className="text-sm text-red-600 mb-3">{usersError}</p>}
@@ -1025,7 +1037,7 @@ export default function AdminDashboardPage() {
                           </td>
                           <td className="px-3 py-2.5">
                             <span
-                              className={`inline-flex items-center justify-center rounded-full border px-2.5 py-1 text-xs font-semibold ${
+                              className={`inline-flex min-w-[3rem] items-center justify-center rounded-full border px-2.5 py-1 text-center text-xs font-semibold ${
                                 u.isEmailVerified
                                   ? 'border-emerald-200 bg-emerald-50 text-emerald-800'
                                   : 'border-red-200 bg-red-50 text-red-700'
@@ -1041,7 +1053,7 @@ export default function AdminDashboardPage() {
                             <button
                               type="button"
                               onClick={() => setUserPendingDelete(u)}
-                              className="rounded-md border border-red-200 bg-white px-2.5 py-1.5 text-xs font-medium text-red-700 transition hover:bg-red-50"
+                              className="rounded-md bg-[#c4a77d] px-2.5 py-1.5 text-xs font-medium text-[#2c1810] transition-colors hover:bg-[#b8956a] focus:outline-none focus:ring-2 focus:ring-[#c4a77d]/40"
                             >
                               Delete
                             </button>
@@ -1057,26 +1069,26 @@ export default function AdminDashboardPage() {
 
           {activeSection === 'analytics' && (
             <section className="space-y-6">
-              <div className="rounded-2xl border border-slate-200 bg-gradient-to-r from-[#0f172a] via-[#1e293b] to-[#312e81] p-5 sm:p-6 shadow-sm text-white">
+              <div className="rounded-2xl border border-[#c4a77d]/50 bg-gradient-to-br from-[#faf6f0] via-[#e8d9c4] to-[#c4a77d] p-5 sm:p-6 shadow-sm">
                 <div>
-                  <p className="text-xs uppercase tracking-[0.2em] text-indigo-200">Store Analytics</p>
-                  <h2 className="text-xl sm:text-2xl font-semibold mt-1">Modern Visual Insights</h2>
-                  <p className="text-sm text-indigo-100/90 mt-1">
+                  <p className="text-xs uppercase tracking-[0.2em] text-[#2c1810]/70">Store Analytics</p>
+                  <h2 className="mt-1 text-xl font-semibold text-[#2c1810] sm:text-2xl">Modern Visual Insights</h2>
+                  <p className="mt-1 text-sm text-[#2c1810]/85">
                     Different graph types for category mix, stock health, price buckets, and trend tracking.
                   </p>
                 </div>
-                <div className="mt-5 grid grid-cols-1 sm:grid-cols-3 gap-3">
-                  <div className="rounded-xl border border-white/20 bg-white/10 p-3">
-                    <p className="text-xs text-indigo-100">Catalog Size</p>
-                    <p className="text-2xl font-semibold mt-1">{stats.totalProducts}</p>
+                <div className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-3">
+                  <div className="rounded-xl border border-[#2c1810]/10 bg-white/75 p-3 shadow-sm backdrop-blur-sm">
+                    <p className="text-xs text-[#2c1810]/75">Catalog Size</p>
+                    <p className="mt-1 text-2xl font-semibold text-[#2c1810]">{stats.totalProducts}</p>
                   </div>
-                  <div className="rounded-xl border border-white/20 bg-white/10 p-3">
-                    <p className="text-xs text-indigo-100">Low Stock Risk</p>
-                    <p className="text-2xl font-semibold mt-1">{stats.lowStockCount}</p>
+                  <div className="rounded-xl border border-[#2c1810]/10 bg-white/75 p-3 shadow-sm backdrop-blur-sm">
+                    <p className="text-xs text-[#2c1810]/75">Low Stock Risk</p>
+                    <p className="mt-1 text-2xl font-semibold text-[#2c1810]">{stats.lowStockCount}</p>
                   </div>
-                  <div className="rounded-xl border border-white/20 bg-white/10 p-3">
-                    <p className="text-xs text-indigo-100">Catalog Value</p>
-                    <p className="text-2xl font-semibold mt-1">Rs. {stats.totalValue.toLocaleString('en-IN')}</p>
+                  <div className="rounded-xl border border-[#2c1810]/10 bg-white/75 p-3 shadow-sm backdrop-blur-sm">
+                    <p className="text-xs text-[#2c1810]/75">Catalog Value</p>
+                    <p className="mt-1 text-2xl font-semibold text-[#2c1810]">Rs. {stats.totalValue.toLocaleString('en-IN')}</p>
                   </div>
                 </div>
               </div>
@@ -1184,7 +1196,7 @@ export default function AdminDashboardPage() {
                           <div key={item.label} className="rounded-lg border border-slate-200 p-3">
                             <p className="text-xs text-slate-600">{item.label}</p>
                             <div className="mt-3 h-28 bg-slate-50 rounded-md flex items-end p-2">
-                              <div className="w-full rounded-sm bg-[#c4a77d]" style={{ height: `${barHeight}%` }} />
+                              <div className="w-full rounded-sm bg-indigo-500" style={{ height: `${barHeight}%` }} />
                             </div>
                             <p className="mt-2 text-sm font-semibold text-slate-900">{item.count} products</p>
                           </div>
@@ -1478,14 +1490,14 @@ export default function AdminDashboardPage() {
                             <button
                               type="button"
                               onClick={() => handleEdit(product)}
-                              className="flex-1 rounded-md border border-[#c4a77d] px-2.5 py-1.5 text-xs font-medium text-[#2c1810] transition hover:bg-[#c4a77d]/15"
+                              className="flex-1 rounded-md bg-[#c4a77d] px-2.5 py-1.5 text-xs font-medium text-[#2c1810] transition-colors hover:bg-[#b8956a]"
                             >
                               Edit
                             </button>
                             <button
                               type="button"
                               onClick={() => handleDelete(product.id)}
-                              className="flex-1 rounded-md border border-[#c4a77d] px-2.5 py-1.5 text-xs font-medium text-[#2c1810] transition hover:bg-[#c4a77d]/15"
+                              className="flex-1 rounded-md bg-[#c4a77d] px-2.5 py-1.5 text-xs font-medium text-[#2c1810] transition-colors hover:bg-[#b8956a]"
                             >
                               Delete
                             </button>
@@ -1588,7 +1600,42 @@ export default function AdminDashboardPage() {
         confirmText="Delete user"
         cancelText="Cancel"
         onConfirm={confirmDeleteUser}
-        onCancel={() => setUserPendingDelete(null)}
+        onCancel={() => {
+          if (!adminDeleteLoading) setUserPendingDelete(null)
+        }}
+      />
+      {adminDeleteLoading && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/50" aria-hidden />
+          <div
+            role="alertdialog"
+            aria-live="polite"
+            aria-busy="true"
+            aria-label="Deleting, please wait"
+            className="relative z-[201] flex w-full max-w-sm flex-col items-center gap-4 rounded-xl bg-white px-8 py-10 shadow-2xl"
+          >
+            <div
+              className="h-11 w-11 shrink-0 rounded-full border-[3px] border-[#c4a77d] border-t-transparent animate-spin"
+              aria-hidden
+            />
+            <div className="text-center">
+              <p className="text-base font-semibold text-slate-900">Please wait</p>
+              <p className="mt-1 text-sm text-slate-600">Deleting…</p>
+            </div>
+          </div>
+        </div>
+      )}
+      <ConfirmPopup
+        isOpen={showLogoutConfirm}
+        title="Logout from admin?"
+        message="Are you sure you want to logout from the admin panel?"
+        confirmText="Logout"
+        cancelText="Cancel"
+        onConfirm={() => {
+          setShowLogoutConfirm(false)
+          handleLogout()
+        }}
+        onCancel={() => setShowLogoutConfirm(false)}
       />
     </main>
   )

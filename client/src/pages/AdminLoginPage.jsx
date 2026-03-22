@@ -92,14 +92,14 @@ export default function AdminLoginPage() {
         </div>
 
         {alreadyLoggedIn && (
-          <div className="mb-4 rounded-lg border border-[#191970]/20 bg-[#191970]/5 p-3">
-            <p className="text-sm text-[#191970]">
+          <div className="mb-4 rounded-lg border border-[#c4a77d]/35 bg-[#faf6f0] p-3">
+            <p className="text-sm text-[#2c1810]">
               Admin session is active. Open dashboard in a new tab.
             </p>
             <button
               type="button"
               onClick={openDashboardInNewTab}
-              className="mt-3 w-full rounded-lg bg-[#191970] text-white py-2.5 text-sm font-medium hover:bg-[#15155e] transition"
+              className="mt-3 w-full rounded-lg bg-[#c4a77d] py-2.5 text-sm font-medium text-[#2c1810] transition-colors hover:bg-[#b8956a] focus:outline-none focus:ring-2 focus:ring-[#c4a77d]/40"
             >
               Open Dashboard
             </button>
@@ -142,7 +142,7 @@ export default function AdminLoginPage() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full rounded-lg bg-gray-900 text-white py-2.5 text-sm font-medium hover:bg-black transition disabled:opacity-70 disabled:cursor-not-allowed"
+            className="w-full rounded-lg bg-[#c4a77d] py-2.5 text-sm font-medium text-[#2c1810] transition-colors hover:bg-[#b8956a] focus:outline-none focus:ring-2 focus:ring-[#c4a77d]/40 disabled:cursor-not-allowed disabled:opacity-70"
           >
             {loading ? 'Logging in...' : 'Login as Admin'}
           </button>
