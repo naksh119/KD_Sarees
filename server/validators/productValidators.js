@@ -20,3 +20,13 @@ export const updateProductValidator = [
   body('category').optional().isMongoId(),
   body('images').optional().isArray(),
 ];
+
+export const bulkCreateProductsValidator = [
+  body('products').isArray({ min: 1, max: 500 }),
+  body('products.*.name').trim().isLength({ min: 2, max: 120 }),
+  body('products.*.price').isFloat({ min: 0 }),
+  body('products.*.category').isMongoId(),
+  body('products.*.stock').optional().isInt({ min: 0 }),
+  body('products.*.description').optional().trim().isLength({ max: 2000 }),
+  body('products.*.images').optional().isArray(),
+];

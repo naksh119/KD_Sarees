@@ -320,7 +320,7 @@ export default function CartPage() {
                 <select
                   value={paymentMethod}
                   onChange={(e) => setPaymentMethod(e.target.value)}
-                  className="mt-2 w-full rounded-xl border border-[#d6c2a1] bg-[#fffcf6] px-3 py-2.5 text-sm outline-none transition focus:border-[#c4a77d] focus:ring-2 focus:ring-[#c4a77d]/30"
+                  className="kd-select kd-select--warm mt-2 w-full rounded-xl border border-[#d6c2a1] bg-[#fffcf6] px-3 py-2.5 text-sm text-[#2c1810] outline-none transition"
                 >
                   <option value="cod">Cash on Delivery</option>
                   <option value="upi">UPI</option>

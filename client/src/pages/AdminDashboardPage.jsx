@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import ConfirmPopup from '../components/ConfirmPopup'
 import { api } from '../utils/api'
+import { parseProductCsv, PRODUCT_CSV_TEMPLATE } from '../utils/parseProductCsv'
 
 const ADMIN_SESSION_KEY = 'kd_sarees_admin_session'
 const ADMIN_TOKEN_KEY = 'kd_sarees_admin_token'
@@ -114,6 +115,7 @@ export default function AdminDashboardPage() {
   const navigate = useNavigate()
   const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'https://kd-sarees.onrender.com'
   const [products, setProducts] = useState(defaultProducts)
+  const [productsListLoading, setProductsListLoading] = useState(true)
   const [formData, setFormData] = useState(initialForm)
   const [categories, setCategories] = useState([])
   const [editingId, setEditingId] = useState(null)
@@ -125,10 +127,15 @@ export default function AdminDashboardPage() {
   const [offerFormData, setOfferFormData] = useState(initialOfferForm)
   const [offerError, setOfferError] = useState('')
   const [offerLoading, setOfferLoading] = useState(false)
+  const [offersListLoading, setOffersListLoading] = useState(true)
   const [editingOfferId, setEditingOfferId] = useState(null)
   const [reviews, setReviews] = useState([])
+  const [reviewsListLoading, setReviewsListLoading] = useState(true)
   const [reviewError, setReviewError] = useState('')
   const [reviewSuccessMessage, setReviewSuccessMessage] = useState('')
+  const [adminOrders, setAdminOrders] = useState([])
+  const [ordersListLoading, setOrdersListLoading] = useState(false)
+  const [ordersError, setOrdersError] = useState('')
   const [categoryFormData, setCategoryFormData] = useState(initialCategoryForm)
   const [categoryError, setCategoryError] = useState('')
   const [categorySuccessMessage, setCategorySuccessMessage] = useState('')
@@ -141,6 +148,11 @@ export default function AdminDashboardPage() {
   const [userPendingDelete, setUserPendingDelete] = useState(null)
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false)
   const [adminDeleteLoading, setAdminDeleteLoading] = useState(false)
+  const [bulkImportLoading, setBulkImportLoading] = useState(false)
+  const [bulkImportError, setBulkImportError] = useState('')
+  const [bulkImportNote, setBulkImportNote] = useState('')
+  const [bulkImportParseErrors, setBulkImportParseErrors] = useState([])
+  const [bulkImportResult, setBulkImportResult] = useState(null)
   const userDeleteSubmittingRef = useRef(false)
   const categoryOptions = useMemo(() => normalizeCategoryList(categories), [categories])
   const selectCategoryOptions = useMemo(() => {
@@ -158,6 +170,9 @@ export default function AdminDashboardPage() {
 
   useEffect(() => {
     const loadAdminData = async () => {
+      setProductsListLoading(true)
+      setOffersListLoading(true)
+      setReviewsListLoading(true)
       try {
         const productData = await api.getProducts()
         setProducts(
@@ -182,11 +197,44 @@ export default function AdminDashboardPage() {
         setReviews(Array.isArray(reviewData) ? reviewData : [])
       } catch (err) {
         setOfferError(err.message || 'Unable to fetch offers')
+      } finally {
+        setProductsListLoading(false)
+        setOffersListLoading(false)
+        setReviewsListLoading(false)
       }
     }
 
     loadAdminData()
   }, [apiBaseUrl])
+
+  useEffect(() => {
+    if (activeSection !== 'orders') {
+      return undefined
+    }
+    let cancelled = false
+    const loadOrders = async () => {
+      setOrdersListLoading(true)
+      setOrdersError('')
+      try {
+        const data = await api.getAdminOrders()
+        if (!cancelled) {
+          setAdminOrders(Array.isArray(data) ? data : [])
+        }
+      } catch (err) {
+        if (!cancelled) {
+          setOrdersError(err.message || 'Unable to load orders')
+        }
+      } finally {
+        if (!cancelled) {
+          setOrdersListLoading(false)
+        }
+      }
+    }
+    loadOrders()
+    return () => {
+      cancelled = true
+    }
+  }, [activeSection])
 
   useEffect(() => {
     if (activeSection !== 'allUsers' && activeSection !== 'adminUsers') {
@@ -342,6 +390,70 @@ export default function AdminDashboardPage() {
     setError('')
   }
 
+  const downloadProductCsvTemplate = () => {
+    const blob = new Blob([PRODUCT_CSV_TEMPLATE], { type: 'text/csv;charset=utf-8' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = 'kd_sarees_products_template.csv'
+    a.click()
+    URL.revokeObjectURL(url)
+  }
+
+  const refreshProductList = async () => {
+    const productData = await api.getProducts()
+    setProducts(
+      (productData || []).map((p) => ({
+        id: p._id,
+        name: p.name,
+        price: toNumber(p.price),
+        category: p.category?._id || p.category || '',
+        categoryName: p.category?.name || 'Uncategorized',
+        stock: toNumber(p.stock),
+        imageUrl: p.images?.[0] || '',
+      })),
+    )
+  }
+
+  const handleBulkCsvChange = async (event) => {
+    const file = event.target.files?.[0]
+    if (!file) return
+    setBulkImportError('')
+    setBulkImportNote('')
+    setBulkImportParseErrors([])
+    setBulkImportResult(null)
+
+    try {
+      const text = await file.text()
+      const { products: parsed, parseErrors } = parseProductCsv(text, categoryOptions)
+      setBulkImportParseErrors(parseErrors)
+      if (parsed.length === 0) {
+        setBulkImportError(
+          parseErrors.length
+            ? 'No valid rows to import. See row errors below.'
+            : 'No data rows found in the CSV file.',
+        )
+        return
+      }
+
+      setBulkImportLoading(true)
+      const result = await api.bulkCreateProducts(parsed)
+      setBulkImportResult(result)
+      if (result?.message) {
+        setBulkImportNote(result.message)
+      }
+      await refreshProductList()
+    } catch (err) {
+      setBulkImportError(err.message || 'Unable to import products')
+      if (err.details) {
+        setBulkImportResult(err.details)
+      }
+    } finally {
+      setBulkImportLoading(false)
+      event.target.value = ''
+    }
+  }
+
   const handleDelete = async (id) => {
     setAdminDeleteLoading(true)
     try {
@@ -388,18 +500,7 @@ export default function AdminDashboardPage() {
         await api.createProduct(payload)
         setSuccessMessage('Product added successfully.')
       }
-      const productData = await api.getProducts()
-      setProducts(
-        (productData || []).map((p) => ({
-          id: p._id,
-          name: p.name,
-          price: toNumber(p.price),
-          category: p.category?._id || p.category || '',
-          categoryName: p.category?.name || 'Uncategorized',
-          stock: toNumber(p.stock),
-          imageUrl: p.images?.[0] || '',
-        })),
-      )
+      await refreshProductList()
       resetForm()
     } catch (err) {
       setError(err.message || 'Unable to save product')
@@ -636,7 +737,7 @@ export default function AdminDashboardPage() {
   }
 
   return (
-    <main className="min-h-screen bg-[#f6f7fb]">
+    <main className="admin-dashboard min-h-screen bg-[#f6f7fb]">
       <div className="flex">
         {isMobileSidebarOpen && (
           <div className="fixed inset-0 z-[100] lg:hidden">
@@ -882,13 +983,34 @@ export default function AdminDashboardPage() {
           {activeSection === 'offers' && (
             <section className="rounded-xl border border-slate-200 bg-white p-4 sm:p-5 shadow-sm">
             <h3 className="text-lg font-semibold text-slate-900 mb-4">Current Offers</h3>
-            {offers.length === 0 ? (
+            {offersListLoading ? (
+              <div
+                className="flex flex-col items-center justify-center gap-3 py-16"
+                role="status"
+                aria-live="polite"
+                aria-label="Loading offers"
+              >
+                <div className="h-10 w-10 animate-spin rounded-full border-2 border-slate-200 border-t-[#c4a77d] border-r-[#c4a77d]/40" />
+                <p className="text-sm text-slate-500">Loading offers…</p>
+              </div>
+            ) : offers.length === 0 ? (
               <p className="text-sm text-slate-600">No offers created yet.</p>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
                 {offers.map((offer) => (
                   <article key={offer._id} className="rounded-lg border border-slate-200 p-3">
-                    <p className="text-sm font-semibold text-slate-900">{offer.title}</p>
+                    <div className="flex items-start justify-between gap-2">
+                      <p className="text-sm font-semibold text-slate-900">{offer.title}</p>
+                      <span
+                        className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${
+                          offer.isActive
+                            ? 'bg-emerald-100 text-emerald-800'
+                            : 'bg-slate-200 text-slate-600'
+                        }`}
+                      >
+                        {offer.isActive ? 'Active' : 'Inactive'}
+                      </span>
+                    </div>
                     <p className="text-xs text-slate-600 mt-1">{offer.description}</p>
                     <p className="text-xs text-slate-500 mt-2">
                       {offer.discountPercent ? `${offer.discountPercent}% OFF` : 'General offer'}
@@ -943,7 +1065,17 @@ export default function AdminDashboardPage() {
               </div>
               {reviewError && <p className="text-sm text-red-600 mb-3">{reviewError}</p>}
               {reviewSuccessMessage && <p className="text-sm text-emerald-700 mb-3">{reviewSuccessMessage}</p>}
-              {reviews.length === 0 ? (
+              {reviewsListLoading ? (
+                <div
+                  className="flex flex-col items-center justify-center gap-3 py-16"
+                  role="status"
+                  aria-live="polite"
+                  aria-label="Loading reviews"
+                >
+                  <div className="h-10 w-10 animate-spin rounded-full border-2 border-slate-200 border-t-[#c4a77d] border-r-[#c4a77d]/40" />
+                  <p className="text-sm text-slate-500">Loading reviews…</p>
+                </div>
+              ) : reviews.length === 0 ? (
                 <p className="text-sm text-slate-600">No reviews available.</p>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
@@ -966,6 +1098,80 @@ export default function AdminDashboardPage() {
                       </button>
                     </article>
                   ))}
+                </div>
+              )}
+            </section>
+          )}
+
+          {activeSection === 'orders' && (
+            <section className="rounded-xl border border-slate-200 bg-white p-4 sm:p-5 shadow-sm">
+              <div className="mb-4 flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
+                <div>
+                  <p className="text-xs uppercase tracking-[0.2em] text-[#191970]">Order management</p>
+                  <h3 className="text-lg font-semibold text-slate-900 mt-1">All orders</h3>
+                  <p className="text-sm text-slate-600 mt-1">Customer orders across the store.</p>
+                </div>
+                <p className="text-xs text-slate-500 flex items-center gap-2 min-h-[1rem]">
+                  {!ordersListLoading &&
+                    `${adminOrders.length} order${adminOrders.length === 1 ? '' : 's'}`}
+                </p>
+              </div>
+              {ordersError && <p className="text-sm text-red-600 mb-3">{ordersError}</p>}
+              {ordersListLoading ? (
+                <div
+                  className="flex flex-col items-center justify-center gap-3 py-16"
+                  role="status"
+                  aria-live="polite"
+                  aria-label="Loading orders"
+                >
+                  <div className="h-10 w-10 animate-spin rounded-full border-2 border-slate-200 border-t-[#c4a77d] border-r-[#c4a77d]/40" />
+                  <p className="text-sm text-slate-500">Loading orders…</p>
+                </div>
+              ) : adminOrders.length === 0 ? (
+                <p className="text-sm text-slate-600">No orders yet.</p>
+              ) : (
+                <div className="overflow-x-auto rounded-lg border border-slate-200">
+                  <table className="min-w-full text-left text-sm">
+                    <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-600">
+                      <tr>
+                        <th className="px-3 py-2.5 font-semibold">Order</th>
+                        <th className="px-3 py-2.5 font-semibold">Customer</th>
+                        <th className="px-3 py-2.5 font-semibold">Total</th>
+                        <th className="px-3 py-2.5 font-semibold">Status</th>
+                        <th className="px-3 py-2.5 font-semibold">Payment</th>
+                        <th className="px-3 py-2.5 font-semibold">Placed</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {adminOrders.map((order) => (
+                        <tr key={order._id} className="text-slate-800">
+                          <td className="px-3 py-2.5 font-mono text-xs">
+                            #{String(order._id).slice(-8).toUpperCase()}
+                          </td>
+                          <td className="px-3 py-2.5">
+                            <span className="font-medium">{order.user?.name || '—'}</span>
+                            <span className="block text-xs text-slate-500">{order.user?.email || ''}</span>
+                          </td>
+                          <td className="px-3 py-2.5 whitespace-nowrap">
+                            Rs. {Number(order.totalAmount || 0).toLocaleString('en-IN')}
+                          </td>
+                          <td className="px-3 py-2.5">
+                            <span className="inline-flex rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-800">
+                              {order.status || '—'}
+                            </span>
+                          </td>
+                          <td className="px-3 py-2.5">
+                            <span className="inline-flex rounded-full bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-900">
+                              {order.paymentStatus || '—'}
+                            </span>
+                          </td>
+                          <td className="px-3 py-2.5 text-slate-600 whitespace-nowrap">
+                            {formatUserDate(order.createdAt)}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
               )}
             </section>
@@ -1310,7 +1516,7 @@ export default function AdminDashboardPage() {
                       name="name"
                       value={categoryFormData.name}
                       onChange={handleCategoryChange}
-                      className="w-full rounded-lg border border-gray-300 bg-white px-3 py-3 text-base sm:py-2.5 sm:text-sm focus:border-[#191970] focus:outline-none"
+                      className="w-full rounded-lg border border-gray-300 bg-white px-3 py-3 text-base text-gray-900 sm:py-2.5 sm:text-sm"
                     >
                       <option value="">Select category</option>
                       {DEFAULT_CATEGORY_NAMES.map((name) => (
@@ -1363,7 +1569,7 @@ export default function AdminDashboardPage() {
                       name="category"
                       value={formData.category}
                       onChange={handleChange}
-                      className="w-full rounded-lg border border-gray-300 bg-white px-3 py-3 text-base sm:py-2.5 sm:text-sm focus:border-[#191970] focus:outline-none"
+                      className="w-full rounded-lg border border-gray-300 bg-white px-3 py-3 text-base text-gray-900 sm:py-2.5 sm:text-sm"
                     >
                       <option value="">Select Category</option>
                       {selectCategoryOptions.length === 0 && (
@@ -1457,17 +1663,103 @@ export default function AdminDashboardPage() {
               )}
 
               {(activeSection === 'overview' || activeSection === 'products') && (
+                <div className="bg-white border border-slate-200 rounded-xl p-4 sm:p-5 shadow-sm">
+                  <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 mb-4">
+                    <div>
+                      <h2 className="text-lg font-semibold text-gray-900">Bulk import (CSV)</h2>
+                      <p className="text-sm text-slate-600 mt-1 max-w-xl">
+                        Upload a CSV with columns: <span className="font-medium">name</span>,{' '}
+                        <span className="font-medium">price</span>, <span className="font-medium">category</span>{' '}
+                        (MongoDB category id or exact category name), optional{' '}
+                        <span className="font-medium">stock</span>, <span className="font-medium">description</span>,{' '}
+                        <span className="font-medium">imageUrl</span> or <span className="font-medium">images</span>{' '}
+                        (pipe-separated URLs). Rows with errors are skipped; valid rows are still imported.
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={downloadProductCsvTemplate}
+                      className="shrink-0 rounded-lg border border-[#c4a77d] bg-white px-3 py-2 text-sm font-medium text-[#2c1810] transition hover:bg-[#c4a77d]/15"
+                    >
+                      Download template
+                    </button>
+                  </div>
+                  <label className="block">
+                    <span className="sr-only">Choose CSV file</span>
+                    <input
+                      type="file"
+                      accept=".csv,text/csv"
+                      disabled={bulkImportLoading}
+                      onChange={handleBulkCsvChange}
+                      className="w-full text-sm text-gray-700 file:mr-3 file:rounded-md file:border-0 file:bg-[#c4a77d]/30 file:px-3 file:py-2 file:text-xs file:font-medium file:text-[#2c1810] hover:file:bg-[#c4a77d]/45 disabled:opacity-50"
+                    />
+                  </label>
+                  {bulkImportLoading && (
+                    <p className="text-sm text-slate-600 mt-3">Importing products…</p>
+                  )}
+                  {bulkImportError && <p className="text-sm text-red-600 mt-3">{bulkImportError}</p>}
+                  {bulkImportNote && <p className="text-sm text-emerald-700 mt-3">{bulkImportNote}</p>}
+                  {bulkImportParseErrors.length > 0 && (
+                    <div className="mt-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-950">
+                      <p className="font-medium">CSV row issues (skipped)</p>
+                      <ul className="mt-1 list-disc list-inside space-y-0.5 text-xs">
+                        {bulkImportParseErrors.map((item) => (
+                          <li key={`parse-${item.row}`}>
+                            Row {item.row}: {item.message}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                  {bulkImportResult?.failedCount > 0 &&
+                    bulkImportResult?.errors?.length > 0 &&
+                    bulkImportResult.message !== 'Validation failed' && (
+                      <div className="mt-3 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-950">
+                        <p className="font-medium">Server could not create some items</p>
+                        <ul className="mt-1 list-disc list-inside space-y-0.5 text-xs max-h-40 overflow-y-auto">
+                          {bulkImportResult.errors.map((item) => (
+                            <li key={`srv-${item.index}-${item.message}`}>
+                              Index {item.index}: {item.message}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                  {bulkImportResult?.message === 'Validation failed' && bulkImportResult?.errors?.length > 0 && (
+                    <div className="mt-3 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-950">
+                      <p className="font-medium">Validation failed</p>
+                      <ul className="mt-1 list-disc list-inside space-y-0.5 text-xs max-h-40 overflow-y-auto">
+                        {bulkImportResult.errors.map((item, idx) => (
+                          <li key={`val-${idx}`}>{item.msg || item.path || JSON.stringify(item)}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {(activeSection === 'overview' || activeSection === 'products') && (
               <div className="bg-white border border-slate-200 rounded-xl p-4 sm:p-5 shadow-sm">
                 <h2 className="text-lg font-semibold text-gray-900 mb-4">Products</h2>
 
-                {products.length === 0 ? (
+                {productsListLoading ? (
+                  <div
+                    className="flex flex-col items-center justify-center gap-3 py-16"
+                    role="status"
+                    aria-live="polite"
+                    aria-label="Loading products"
+                  >
+                    <div className="h-10 w-10 animate-spin rounded-full border-2 border-slate-200 border-t-[#c4a77d] border-r-[#c4a77d]/40" />
+                    <p className="text-sm text-slate-500">Loading products…</p>
+                  </div>
+                ) : products.length === 0 ? (
                   <p className="text-sm text-gray-600">No products added yet.</p>
                 ) : (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2 sm:gap-3">
                     {products.map((product) => (
                       <article
                         key={product.id}
-                        className="rounded-xl border border-gray-200 bg-white overflow-hidden hover:shadow-md transition"
+                        className="min-w-0 rounded-lg border border-gray-200 bg-white overflow-hidden hover:shadow-md transition flex flex-col"
                       >
                         <img
                           src={
@@ -1475,18 +1767,28 @@ export default function AdminDashboardPage() {
                             'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?auto=format&fit=crop&w=900&q=80'
                           }
                           alt={product.name}
-                          className="w-full h-36 object-cover"
+                          className="w-full h-20 sm:h-24 object-cover shrink-0"
                         />
-                        <div className="p-3 space-y-2">
-                          <div className="flex items-start justify-between gap-2">
-                            <h3 className="font-medium text-gray-900 text-sm">{product.name}</h3>
-                            <span className="text-xs px-2 py-1 rounded-full bg-[#191970]/10 text-[#191970]">
+                        <div className="p-2 space-y-1.5 min-w-0 flex-1 flex flex-col">
+                          <div className="min-w-0 space-y-1">
+                            <h3
+                              className="font-medium text-gray-900 text-xs leading-snug line-clamp-2 break-words"
+                              title={product.name}
+                            >
+                              {product.name}
+                            </h3>
+                            <span
+                              className="text-[10px] sm:text-xs px-1.5 py-0.5 rounded-full bg-[#191970]/10 text-[#191970] block truncate w-full"
+                              title={String(product.categoryName || product.category || '')}
+                            >
                               {product.categoryName || product.category}
                             </span>
                           </div>
-                          <p className="text-sm text-gray-700">Rs. {product.price.toLocaleString('en-IN')}</p>
-                          <p className="text-xs text-gray-500">Stock: {product.stock}</p>
-                          <div className="flex gap-2 pt-1">
+                          <p className="text-xs sm:text-sm text-gray-700 tabular-nums shrink-0">
+                            Rs. {product.price.toLocaleString('en-IN')}
+                          </p>
+                          <p className="text-xs text-gray-500 shrink-0">Stock: {product.stock}</p>
+                          <div className="mt-auto flex gap-2 pt-1">
                             <button
                               type="button"
                               onClick={() => handleEdit(product)}
@@ -1557,7 +1859,7 @@ export default function AdminDashboardPage() {
             </div>
           )}
 
-          {!['overview', 'products', 'offers', 'reviews', 'analytics', 'allUsers', 'adminUsers'].includes(
+          {!['overview', 'products', 'offers', 'reviews', 'orders', 'analytics', 'allUsers', 'adminUsers'].includes(
             activeSection,
           ) && (
             <section className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">

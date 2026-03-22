@@ -72,7 +72,9 @@ const request = async (path, { method = 'GET', body, auth = 'none', _retry = fal
         throw new Error(refreshError.message || 'Session expired. Please login again.')
       }
     }
-    throw new Error(data?.message || `Request failed (${response.status})`)
+    const err = new Error(data?.message || `Request failed (${response.status})`)
+    err.details = data
+    throw err
   }
   return data
 }
@@ -85,6 +87,8 @@ export const api = {
     return request(`/api/products${qs ? `?${qs}` : ''}`)
   },
   createProduct: (payload) => request('/api/products', { method: 'POST', body: payload, auth: 'admin' }),
+  bulkCreateProducts: (products) =>
+    request('/api/products/bulk', { method: 'POST', body: { products }, auth: 'admin' }),
   updateProduct: (id, payload) => request(`/api/products/${id}`, { method: 'PUT', body: payload, auth: 'admin' }),
   deleteProduct: (id) => request(`/api/products/${id}`, { method: 'DELETE', auth: 'admin' }),
   getCategories: () => request('/api/categories'),
@@ -108,6 +112,7 @@ export const api = {
   removeFavoriteItem: (payload) => request('/api/favorites/item', { method: 'DELETE', body: payload, auth: 'user' }),
   createOrder: (payload) => request('/api/orders', { method: 'POST', body: payload, auth: 'user' }),
   getMyOrders: () => request('/api/orders/my', { auth: 'user' }),
+  getAdminOrders: () => request('/api/orders/admin/all', { auth: 'admin' }),
   createPayment: (orderId, payload) =>
     request(`/api/payments/order/${orderId}`, { method: 'POST', body: payload, auth: 'user' }),
   listUsers: (role) => {

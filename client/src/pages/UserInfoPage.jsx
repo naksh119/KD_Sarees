@@ -269,7 +269,17 @@ export default function UserInfoPage() {
                       <h2 className="text-lg font-semibold text-[#2c1810]">My Orders</h2>
                     </div>
 
-                    {orders.length === 0 ? (
+                    {loading ? (
+                      <div
+                        className="flex flex-1 flex-col items-center justify-center gap-3 px-4 py-16"
+                        role="status"
+                        aria-live="polite"
+                        aria-label="Loading orders"
+                      >
+                        <div className="h-10 w-10 animate-spin rounded-full border-2 border-slate-200 border-t-[#c4a77d] border-r-[#c4a77d]/40" />
+                        <p className="text-sm text-slate-500">Loading orders…</p>
+                      </div>
+                    ) : orders.length === 0 ? (
                       <div className="flex flex-1 flex-col items-center justify-center px-4 py-8 text-center sm:py-10">
                         <div className="mb-4 rounded-full border border-[#c4a77d]/35 bg-[#faf6f0] p-4 text-[#c4a77d]">
                           <FaBoxOpen className="text-4xl" />
