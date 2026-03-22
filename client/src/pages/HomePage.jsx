@@ -61,9 +61,7 @@ function HomePage() {
         if (mappedProducts.length) {
           setProducts(mappedProducts)
         }
-        if (mappedReviews.length) {
-          setReviews(mappedReviews)
-        }
+        setReviews(mappedReviews)
       } catch {
         // Keep empty arrays if API is unavailable.
       } finally {
@@ -127,6 +125,18 @@ function HomePage() {
         comment: payload.reviewText,
         imageSrc: payload.imageSrc || '',
       })
+      const reviewsData = await api.getReviews()
+      const mappedReviews = (reviewsData || []).map((r) => ({
+        id: r._id,
+        imageSrc: r.imageSrc || '',
+        imageAlt: r.product?.name || 'Product',
+        reviewText: r.comment,
+        rating: r.rating,
+        reviewerName: r.user?.name || 'Customer',
+        verified: true,
+        productVariant: r.product?.name || '',
+      }))
+      setReviews(mappedReviews)
       return true
     } catch (err) {
       throw new Error(err?.message || 'Unable to save review to server')
@@ -139,7 +149,7 @@ function HomePage() {
   }
 
   const productDataForUi = useMemo(() => products, [products])
-  const reviewDataForUi = useMemo(() => (reviews.length ? reviews : undefined), [reviews])
+  const reviewDataForUi = useMemo(() => reviews, [reviews])
 
   return (
     <>

@@ -133,7 +133,7 @@ export default function SignupPage({ isPopup = false, onClose }) {
                   <div className="mb-4 flex h-8 w-8 items-center justify-center rounded-full border border-[#b48a62]/60 bg-[#fffaf2] text-[7px] text-[#6e452d]">
                     <span style={{ fontFamily: "'Great Vibes', cursive" }}>Kd</span>
                   </div>
-                  <p className="max-w-[130px] text-sm font-semibold leading-tight text-[#4a2f1f] sm:text-base">
+                  <p className="max-w-[130px] break-words text-[10px] font-semibold leading-snug text-[#4a2f1f] sm:text-xs">
                     {item}
                   </p>
                 </div>

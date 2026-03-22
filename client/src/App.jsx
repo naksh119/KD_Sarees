@@ -36,11 +36,13 @@ function ProtectedUserRoute({ children }) {
 function App() {
   const location = useLocation()
   const backgroundLocation = location.state?.backgroundLocation
+  const overlayOpen = Boolean(backgroundLocation)
+  /** RR modal pattern can fail to paint the underlay; home-as-bg is common (e.g. after logout). */
+  const homeOnlyBehindModal = overlayOpen && backgroundLocation?.pathname === '/'
 
-  return (
+  const mainRoutes = (
     <>
-      <Routes location={backgroundLocation || location}>
-        <Route path="/" element={<HomePage />} />
+      <Route path="/" element={<HomePage />} />
         <Route
           path="/auth"
           element={
@@ -96,10 +98,19 @@ function App() {
         <Route element={<AdminRoute />}>
           <Route path="/admin/dashboard" element={<AdminDashboardPage />} />
         </Route>
-      </Routes>
+    </>
+  )
 
-      {backgroundLocation ? (
-        <Routes>
+  return (
+    <>
+      {homeOnlyBehindModal ? (
+        <HomePage />
+      ) : (
+        <Routes location={overlayOpen ? backgroundLocation : location}>{mainRoutes}</Routes>
+      )}
+
+      {overlayOpen ? (
+        <Routes location={location}>
           <Route
             path="/auth"
             element={

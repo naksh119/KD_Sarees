@@ -17,8 +17,11 @@ export default function VerifyEmailPage() {
     return q || fromState || fromSession
   }, [searchParams, location.state?.verificationToken])
 
+  const hasAutoToken = Boolean(String(autoVerifyToken || '').trim())
+
   const [manualToken, setManualToken] = useState('')
-  const [loading, setLoading] = useState(false)
+  // Start in loading when we will auto-verify so we never flash the empty token form.
+  const [loading, setLoading] = useState(hasAutoToken)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState(false)
 
@@ -46,6 +49,7 @@ export default function VerifyEmailPage() {
       const trimmed = String(rawToken || '').trim()
       if (!trimmed) {
         setError('Verification token is missing.')
+        setLoading(false)
         return
       }
       setError('')
@@ -86,6 +90,9 @@ export default function VerifyEmailPage() {
     await verifyWithToken(manualToken)
   }
 
+  // Show paste form only when there is no link/session token, or auto-verify failed.
+  const showManualTokenForm = !hasAutoToken || Boolean(error)
+
   return (
     <div className="fixed inset-0 z-[100] flex items-start justify-center overflow-y-auto px-0 py-0 md:items-center md:px-4 md:py-8">
       <button
@@ -112,7 +119,9 @@ export default function VerifyEmailPage() {
           </p>
           <h1 className="mt-4 text-center text-2xl font-semibold text-gray-900">Verify your email</h1>
           <p className="mx-auto mt-2 max-w-sm text-center text-sm text-gray-600">
-            We sent a verification link to your inbox. Open the link, or paste the token from the email below if needed.
+            {showManualTokenForm
+              ? 'Paste the verification token from your email, or use the link we sent you.'
+              : 'Hang on — we are confirming your email now.'}
           </p>
 
           {success ? (
@@ -126,11 +135,11 @@ export default function VerifyEmailPage() {
                 Continue to login
               </Link>
             </div>
-          ) : (
+          ) : showManualTokenForm ? (
             <form onSubmit={handleManualSubmit} className="mx-auto mt-8 w-full max-w-sm space-y-4">
               <div>
                 <label htmlFor="verify-token" className="mb-1 block text-sm font-medium text-gray-700">
-                  Verification token (optional if you opened the link)
+                  Verification token
                 </label>
                 <textarea
                   id="verify-token"
@@ -138,7 +147,7 @@ export default function VerifyEmailPage() {
                   value={manualToken}
                   onChange={(e) => setManualToken(e.target.value)}
                   rows={3}
-                  placeholder="Paste token from email (only if the link did not work)"
+                  placeholder="Paste token from your email"
                   className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm text-gray-900 focus:border-[#0b3da2] focus:outline-none"
                 />
               </div>
@@ -151,6 +160,10 @@ export default function VerifyEmailPage() {
                 {loading ? 'Verifying…' : 'Verify email'}
               </button>
             </form>
+          ) : (
+            <div className="mx-auto mt-10 max-w-sm text-center">
+              <p className="text-sm text-gray-600">{loading ? 'Verifying…' : 'Almost done…'}</p>
+            </div>
           )}
 
           <p className="mx-auto mt-8 max-w-sm text-center text-sm text-gray-600">

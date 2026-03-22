@@ -1,338 +1,11 @@
 /**
  * Customer Reviews section – carousel of ReviewCard, View all / Add review modals.
- * User-added reviews persist in localStorage (key: kd_sarees_customer_reviews).
+ * Reviews come from the API (parent passes `reviews`); no placeholder/demo data.
  */
 
 import { useRef, useEffect, useState, useMemo } from 'react';
 import ReviewCard from './ReviewCard';
 import ReviewSuccessPopup from './ReviewSuccessPopup';
-import sareeImage from '../assets/images/saree.webp';
-import sareeImage2 from '../assets/images/sareeImage2.webp';
-import sareeImage3 from '../assets/images/sareeimage3.jpg';
-import sareeImageMain from '../assets/images/sareeImage.webp';
-
-const DEFAULT_REVIEWS = [
-  {
-    id: '1',
-    imageSrc: sareeImage,
-    imageAlt: 'Teal green saree',
-    reviewText: 'Saree is just beautiful, Love it I ordered for my friend I will buy on...',
-    rating: 5,
-    reviewerName: 'Shushmita V...',
-    verified: true,
-    productVariant: 'Teal Green...',
-  },
-  {
-    id: '2',
-    imageSrc: sareeImage2,
-    imageAlt: 'Dark purple fabric',
-    reviewText: 'My Mother liked it so much Fancy but affordable❤️❤️',
-    rating: 5,
-    reviewerName: 'PARVEJ AKH...',
-    verified: true,
-    productVariant: 'Black Silk Woven...',
-  },
-  {
-    id: '3',
-    imageSrc: sareeImage3,
-    imageAlt: 'Dusty pink saree',
-    reviewText: 'This pink shade saree is truly perfect for wedding...',
-    rating: 5,
-    reviewerName: 'Nilanjana Gang...',
-    verified: false,
-    productVariant: 'Dusty Pink Silk...',
-  },
-  {
-    id: '4',
-    imageSrc: sareeImageMain,
-    imageAlt: 'Off-white saree',
-    reviewText: 'I have purchased this saree for my wife & she like most.',
-    rating: 5,
-    reviewerName: 'Sachin Kum...',
-    verified: true,
-    productVariant: 'Holi Off White Line...',
-  },
-  {
-    id: '5',
-    imageSrc: sareeImage,
-    imageAlt: 'Teal green silk',
-    reviewText: 'I am happy to see the real saree after delivery...',
-    rating: 5,
-    reviewerName: 'simple sim',
-    verified: false,
-    productVariant: 'Teal Green Silk...',
-  },
-  {
-    id: '6',
-    imageSrc: sareeImage2,
-    imageAlt: 'Silk saree',
-    reviewText: 'Quality and colour exactly as shown. Very happy with the purchase.',
-    rating: 5,
-    reviewerName: 'Priya S...',
-    verified: true,
-    productVariant: 'Maroon Silk...',
-  },
-  {
-    id: '7',
-    imageSrc: sareeImage3,
-    imageAlt: 'Pink silk saree',
-    reviewText: 'Perfect for my sister\'s wedding. Everyone asked where I got it from!',
-    rating: 5,
-    reviewerName: 'Anita R...',
-    verified: true,
-    productVariant: 'Dusty Pink Silk...',
-  },
-  {
-    id: '8',
-    imageSrc: sareeImageMain,
-    imageAlt: 'White saree',
-    reviewText: 'Fabric is so soft and the border work is stunning. Worth every rupee.',
-    rating: 5,
-    reviewerName: 'Meera K...',
-    verified: true,
-    productVariant: 'Off White Line...',
-  },
-  {
-    id: '9',
-    imageSrc: sareeImage,
-    imageAlt: 'Green saree',
-    reviewText: 'Delivered on time. Packaging was excellent. Will order again.',
-    rating: 5,
-    reviewerName: 'Rekha P...',
-    verified: false,
-    productVariant: 'Teal Green...',
-  },
-  {
-    id: '10',
-    imageSrc: sareeImage2,
-    imageAlt: 'Black silk',
-    reviewText: 'My mother-in-law loved it. Great gift for occasions.',
-    rating: 5,
-    reviewerName: 'Sunita M...',
-    verified: true,
-    productVariant: 'Black Silk Woven...',
-  },
-  {
-    id: '11',
-    imageSrc: sareeImage3,
-    imageAlt: 'Pink fabric',
-    reviewText: 'Colour matches the image. No complaints at all. Highly recommend.',
-    rating: 4,
-    reviewerName: 'Kavita D...',
-    verified: true,
-    productVariant: 'Dusty Pink...',
-  },
-  {
-    id: '12',
-    imageSrc: sareeImageMain,
-    imageAlt: 'Holi saree',
-    reviewText: 'Bought for Holi party. Light and comfortable. Beautiful print.',
-    rating: 5,
-    reviewerName: 'Pooja S...',
-    verified: true,
-    productVariant: 'Holi Off White...',
-  },
-  {
-    id: '13',
-    imageSrc: sareeImage,
-    imageAlt: 'Teal saree',
-    reviewText: 'First time buying online. Trust this store. Quality is top notch.',
-    rating: 5,
-    reviewerName: 'Neha G...',
-    verified: true,
-    productVariant: 'Teal Green Silk...',
-  },
-  {
-    id: '14',
-    imageSrc: sareeImage2,
-    imageAlt: 'Maroon saree',
-    reviewText: 'Exactly as described. Stitching and finish are very good.',
-    rating: 5,
-    reviewerName: 'Vandana L...',
-    verified: false,
-    productVariant: 'Maroon Silk...',
-  },
-  {
-    id: '15',
-    imageSrc: sareeImage3,
-    imageAlt: 'Pink wedding saree',
-    reviewText: 'Wore it for my best friend\'s wedding. Got so many compliments!',
-    rating: 5,
-    reviewerName: 'Divya N...',
-    verified: true,
-    productVariant: 'Dusty Pink Silk...',
-  },
-  {
-    id: '16',
-    imageSrc: sareeImageMain,
-    imageAlt: 'White silk',
-    reviewText: 'Good value for money. Will definitely buy more sarees from here.',
-    rating: 4,
-    reviewerName: 'Swati J...',
-    verified: true,
-    productVariant: 'Off White...',
-  },
-  {
-    id: '17',
-    imageSrc: sareeImage,
-    imageAlt: 'Green silk',
-    reviewText: 'Beautiful embroidery. Perfect for festive season. Thank you!',
-    rating: 5,
-    reviewerName: 'Preeti B...',
-    verified: true,
-    productVariant: 'Teal Green...',
-  },
-  {
-    id: '18',
-    imageSrc: sareeImage2,
-    imageAlt: 'Purple saree',
-    reviewText: 'Fast delivery and great packaging. Saree is even better in person.',
-    rating: 5,
-    reviewerName: 'Ritu T...',
-    verified: true,
-    productVariant: 'Black Silk...',
-  },
-  {
-    id: '19',
-    imageSrc: sareeImage3,
-    imageAlt: 'Pink silk',
-    reviewText: 'Love the shade of pink. Perfect for summer weddings.',
-    rating: 5,
-    reviewerName: 'Shalini C...',
-    verified: false,
-    productVariant: 'Dusty Pink...',
-  },
-  {
-    id: '20',
-    imageSrc: sareeImageMain,
-    imageAlt: 'White line',
-    reviewText: 'Great quality and timely delivery. Customer support was helpful.',
-    rating: 5,
-    reviewerName: 'Aarti V...',
-    verified: true,
-    productVariant: 'Holi Off White Line...',
-  },
-  {
-    id: '21',
-    imageSrc: sareeImage,
-    imageAlt: 'Teal woven',
-    reviewText: 'Second purchase from this store. Consistent quality. Happy customer.',
-    rating: 5,
-    reviewerName: 'Smita H...',
-    verified: true,
-    productVariant: 'Teal Green Silk...',
-  },
-  {
-    id: '22',
-    imageSrc: sareeImage2,
-    imageAlt: 'Silk woven',
-    reviewText: 'Elegant and classy. My go-to place for silk sarees now.',
-    rating: 5,
-    reviewerName: 'Geeta R...',
-    verified: true,
-    productVariant: 'Black Silk Woven...',
-  },
-  {
-    id: '23',
-    imageSrc: sareeImage3,
-    imageAlt: 'Pink silk saree',
-    reviewText: 'Amazing quality! Wore it for engagement. Everyone loved it.',
-    rating: 5,
-    reviewerName: 'Kiran M...',
-    verified: true,
-    productVariant: 'Dusty Pink Silk...',
-  },
-  {
-    id: '24',
-    imageSrc: sareeImageMain,
-    imageAlt: 'White saree',
-    reviewText: 'Perfect fit and finish. Will recommend to all my friends.',
-    rating: 5,
-    reviewerName: 'Lata K...',
-    verified: false,
-    productVariant: 'Off White Line...',
-  },
-  {
-    id: '25',
-    imageSrc: sareeImage,
-    imageAlt: 'Teal green',
-    reviewText: 'Third order from here. Never disappointed. Keep it up!',
-    rating: 5,
-    reviewerName: 'Mamta P...',
-    verified: true,
-    productVariant: 'Teal Green...',
-  },
-  {
-    id: '26',
-    imageSrc: sareeImage2,
-    imageAlt: 'Black silk',
-    reviewText: 'Beautiful design. Good for office parties and family functions.',
-    rating: 5,
-    reviewerName: 'Nandini S...',
-    verified: true,
-    productVariant: 'Black Silk Woven...',
-  },
-  {
-    id: '27',
-    imageSrc: sareeImage3,
-    imageAlt: 'Pink fabric',
-    reviewText: 'Soft fabric, comfortable to wear. Delivery was super fast.',
-    rating: 4,
-    reviewerName: 'Oindrila R...',
-    verified: true,
-    productVariant: 'Dusty Pink...',
-  },
-  {
-    id: '28',
-    imageSrc: sareeImageMain,
-    imageAlt: 'Holi collection',
-    reviewText: 'Bought two sarees. Both are gorgeous. Very satisfied.',
-    rating: 5,
-    reviewerName: 'Pallavi D...',
-    verified: true,
-    productVariant: 'Holi Off White...',
-  },
-  {
-    id: '29',
-    imageSrc: sareeImage,
-    imageAlt: 'Green silk',
-    reviewText: 'Best online purchase for sarees. Quality exceeds expectations.',
-    rating: 5,
-    reviewerName: 'Queen R...',
-    verified: true,
-    productVariant: 'Teal Green Silk...',
-  },
-  {
-    id: '30',
-    imageSrc: sareeImage2,
-    imageAlt: 'Maroon silk',
-    reviewText: 'Gift for my daughter. She was so happy. Thank you!',
-    rating: 5,
-    reviewerName: 'Rashmi A...',
-    verified: false,
-    productVariant: 'Maroon Silk...',
-  },
-  {
-    id: '31',
-    imageSrc: sareeImage3,
-    imageAlt: 'Pink wedding',
-    reviewText: 'Stunning saree for wedding season. Got many compliments.',
-    rating: 5,
-    reviewerName: 'Simran L...',
-    verified: true,
-    productVariant: 'Dusty Pink Silk...',
-  },
-  {
-    id: '32',
-    imageSrc: sareeImageMain,
-    imageAlt: 'White line',
-    reviewText: 'Trusted seller. Packaging was neat. Saree is beautiful.',
-    rating: 5,
-    reviewerName: 'Tanvi G...',
-    verified: true,
-    productVariant: 'Holi Off White Line...',
-  },
-];
 
 const DESKTOP_CARD_WIDTH = 160;
 const CARD_GAP = 16;
@@ -344,38 +17,6 @@ function chunkReviews(reviews, size) {
     chunks.push(reviews.slice(i, i + size));
   }
   return chunks;
-}
-
-const STORAGE_KEY = 'kd_sarees_customer_reviews';
-
-function loadUserReviewsFromStorage() {
-  if (typeof window === 'undefined') return [];
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return [];
-    const arr = JSON.parse(raw);
-    return arr.map((r) => ({
-      ...r,
-      imageSrc: r.imageSrc || sareeImage,
-      verified: false,
-      imageAlt: r.imageAlt || 'Your purchase',
-    }));
-  } catch {
-    return [];
-  }
-}
-
-function saveUserReviewsToStorage(list) {
-  const toSave = list.map(({ id, reviewText, rating, reviewerName, productVariant, imageAlt, imageSrc }) => ({
-    id,
-    reviewText,
-    rating,
-    reviewerName,
-    productVariant: productVariant || '',
-    imageAlt: imageAlt || 'Your purchase',
-    imageSrc: imageSrc || sareeImage,
-  }));
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(toSave));
 }
 
 function ModalOverlay({
@@ -532,7 +173,7 @@ function AddReviewForm({ onSubmit, onCancel }) {
         rating,
         reviewText: text,
         productVariant: productVariant.trim() || 'General',
-        imageSrc: imageSrc || sareeImage,
+        imageSrc: imageSrc || '',
       });
       setReviewerName('');
       setReviewText('');
@@ -701,13 +342,12 @@ function AddReviewForm({ onSubmit, onCancel }) {
 }
 
 export default function CustomerReviewsSection({
-  reviews = DEFAULT_REVIEWS,
+  reviews = [],
   autoScrollIntervalMs = 4000,
   onAddReview,
 }) {
   const scrollRef = useRef(null);
   const [isPaused, setIsPaused] = useState(false);
-  const [userReviews, setUserReviews] = useState(loadUserReviewsFromStorage);
   const [viewAllOpen, setViewAllOpen] = useState(false);
   const [addReviewOpen, setAddReviewOpen] = useState(false);
   const [successOpen, setSuccessOpen] = useState(false);
@@ -716,7 +356,7 @@ export default function CustomerReviewsSection({
     typeof window === 'undefined' ? 1280 : window.innerWidth
   );
 
-  const mergedReviews = useMemo(() => [...reviews, ...userReviews], [reviews, userReviews]);
+  const displayReviews = useMemo(() => (Array.isArray(reviews) ? reviews : []), [reviews]);
   const isMobile = viewportWidth < 640;
   const cardsPerPage = isMobile ? 1 : DESKTOP_CARDS_PER_PAGE;
   const cardWidth = isMobile
@@ -724,8 +364,8 @@ export default function CustomerReviewsSection({
     : DESKTOP_CARD_WIDTH;
   const pageWidth = cardsPerPage * cardWidth + (cardsPerPage - 1) * CARD_GAP;
   const reviewPages = useMemo(
-    () => chunkReviews(mergedReviews, cardsPerPage),
-    [mergedReviews, cardsPerPage]
+    () => chunkReviews(displayReviews, cardsPerPage),
+    [displayReviews, cardsPerPage]
   );
   const getScrollStep = (el) => (isMobile ? el.clientWidth : pageWidth);
 
@@ -739,21 +379,6 @@ export default function CustomerReviewsSection({
     if (onAddReview) {
       await onAddReview(payload);
     }
-    const newReview = {
-      id: `user-${Date.now()}`,
-      imageSrc: payload.imageSrc || sareeImage,
-      imageAlt: 'Your purchase',
-      reviewText: payload.reviewText,
-      rating: payload.rating,
-      reviewerName: payload.reviewerName,
-      verified: false,
-      productVariant: payload.productVariant,
-    };
-    setUserReviews((prev) => {
-      const next = [...prev, newReview];
-      saveUserReviewsToStorage(next);
-      return next;
-    });
     setAddReviewOpen(false);
     setSuccessOpen(true);
   };
@@ -839,7 +464,7 @@ export default function CustomerReviewsSection({
           closeButtonClassName="rounded-lg p-2 text-[#2c1810]/85 transition-colors hover:bg-[#b8956a] hover:text-[#2c1810]"
         >
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-            {mergedReviews.map((review) => (
+            {displayReviews.map((review) => (
               <div key={review.id} className="flex justify-center">
                 <ReviewCard
                   imageSrc={review.imageSrc}
@@ -884,89 +509,97 @@ export default function CustomerReviewsSection({
           variant="error"
         />
 
-        <div
-          className="relative mt-8 flex justify-center overflow-hidden"
-          onMouseEnter={() => setIsPaused(true)}
-          onMouseLeave={() => setIsPaused(false)}
-        >
+        {displayReviews.length === 0 ? (
+          <p className="mt-8 text-center text-slate-600">
+            No customer reviews yet. Be the first to share your experience.
+          </p>
+        ) : (
           <div
-            className="relative flex items-center justify-center gap-2 px-2"
-            style={{ width: isMobile ? '100%' : pageWidth + 96 }}
+            className="relative mt-8 flex justify-center overflow-hidden"
+            onMouseEnter={() => setIsPaused(true)}
+            onMouseLeave={() => setIsPaused(false)}
           >
-            {!isMobile ? (
-              <button
-                type="button"
-                onClick={() => scroll('left')}
-                className="z-10 flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-[#c4a77d] bg-[#c4a77d] text-[#2c1810] shadow-md hover:bg-[#b8956a] transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[#c4a77d] focus-visible:ring-offset-2"
-                aria-label="Previous 5 reviews"
-              >
-                <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                </svg>
-              </button>
-            ) : null}
             <div
-              className="overflow-hidden shrink-0"
-              style={{ width: isMobile ? '100%' : pageWidth }}
+              className="relative flex items-center justify-center gap-2 px-2"
+              style={{ width: isMobile ? '100%' : pageWidth + 96 }}
             >
+              {!isMobile ? (
+                <button
+                  type="button"
+                  onClick={() => scroll('left')}
+                  className="z-10 flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-[#c4a77d] bg-[#c4a77d] text-[#2c1810] shadow-md hover:bg-[#b8956a] transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[#c4a77d] focus-visible:ring-offset-2"
+                  aria-label="Previous 5 reviews"
+                >
+                  <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                  </svg>
+                </button>
+              ) : null}
               <div
-                ref={scrollRef}
-                className="flex overflow-x-auto overflow-y-hidden hide-scrollbar snap-x snap-mandatory"
-                style={{
-                  WebkitOverflowScrolling: 'touch',
-                  gap: 0,
-                }}
-                aria-label="Scrollable review cards"
+                className="overflow-hidden shrink-0"
+                style={{ width: isMobile ? '100%' : pageWidth }}
               >
-                {reviewPages.map((pageReviews, pageIndex) => (
-                  <div
-                    key={pageIndex}
-                    className="flex shrink-0 snap-start justify-center"
-                    style={{
-                      width: isMobile ? '100%' : pageWidth,
-                      gap: CARD_GAP,
-                    }}
-                  >
-                    {pageReviews.map((review) => (
-                      <div key={review.id} className="shrink-0" style={{ width: cardWidth }}>
-                        <ReviewCard
-                          imageSrc={review.imageSrc}
-                          imageAlt={review.imageAlt}
-                          reviewText={review.reviewText}
-                          rating={review.rating}
-                          reviewerName={review.reviewerName}
-                          verified={review.verified}
-                          productVariant={review.productVariant}
-                        />
-                      </div>
-                    ))}
-                  </div>
-                ))}
+                <div
+                  ref={scrollRef}
+                  className="flex overflow-x-auto overflow-y-hidden hide-scrollbar snap-x snap-mandatory"
+                  style={{
+                    WebkitOverflowScrolling: 'touch',
+                    gap: 0,
+                  }}
+                  aria-label="Scrollable review cards"
+                >
+                  {reviewPages.map((pageReviews, pageIndex) => (
+                    <div
+                      key={pageIndex}
+                      className="flex shrink-0 snap-start justify-center"
+                      style={{
+                        width: isMobile ? '100%' : pageWidth,
+                        gap: CARD_GAP,
+                      }}
+                    >
+                      {pageReviews.map((review) => (
+                        <div key={review.id} className="shrink-0" style={{ width: cardWidth }}>
+                          <ReviewCard
+                            imageSrc={review.imageSrc}
+                            imageAlt={review.imageAlt}
+                            reviewText={review.reviewText}
+                            rating={review.rating}
+                            reviewerName={review.reviewerName}
+                            verified={review.verified}
+                            productVariant={review.productVariant}
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  ))}
+                </div>
               </div>
+              {!isMobile ? (
+                <button
+                  type="button"
+                  onClick={() => scroll('right')}
+                  className="z-10 flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-[#c4a77d] bg-[#c4a77d] text-[#2c1810] shadow-md hover:bg-[#b8956a] transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[#c4a77d] focus-visible:ring-offset-2"
+                  aria-label="Next 5 reviews"
+                >
+                  <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
+                </button>
+              ) : null}
             </div>
-            {!isMobile ? (
-              <button
-                type="button"
-                onClick={() => scroll('right')}
-                className="z-10 flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-[#c4a77d] bg-[#c4a77d] text-[#2c1810] shadow-md hover:bg-[#b8956a] transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[#c4a77d] focus-visible:ring-offset-2"
-                aria-label="Next 5 reviews"
-              >
-                <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                </svg>
-              </button>
-            ) : null}
           </div>
-        </div>
+        )}
 
         <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
-          <button
-            type="button"
-            onClick={() => setViewAllOpen(true)}
-            className="w-40 rounded-md bg-[#c4a77d] px-8 py-2.5 text-sm font-bold uppercase tracking-wide text-[#2c1810] hover:bg-[#b8956a] transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[#c4a77d] focus-visible:ring-offset-2 sm:w-auto"
-          >
-            View all
-          </button>
+          {displayReviews.length > 0 ? (
+            <button
+              type="button"
+              onClick={() => setViewAllOpen(true)}
+              className="w-40 rounded-md bg-[#c4a77d] px-8 py-2.5 text-sm font-bold uppercase tracking-wide text-[#2c1810] hover:bg-[#b8956a] transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[#c4a77d] focus-visible:ring-offset-2 sm:w-auto"
+            >
+              View all
+            </button>
+          ) : null}
           <button
             type="button"
             onClick={handleAddReviewClick}

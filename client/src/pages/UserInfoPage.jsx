@@ -13,6 +13,15 @@ const USER_TOKEN_KEY = 'kd_sarees_token'
 const USER_REFRESH_TOKEN_KEY = 'kd_sarees_refresh_token'
 const USER_PROFILE_KEY = 'kd_sarees_user'
 
+/** Keeps the storefront visible (dimmed) behind the login modal after logout. */
+const LOGIN_OVERLAY_BACKGROUND = {
+  pathname: '/',
+  search: '',
+  hash: '',
+  state: null,
+  key: 'login-overlay-bg',
+}
+
 export default function UserInfoPage() {
   const navigate = useNavigate()
   const [activeSection, setActiveSection] = useState('orders')
@@ -54,7 +63,7 @@ export default function UserInfoPage() {
   useEffect(() => {
     const fetchProfile = async () => {
       if (!token) {
-        navigate('/login', { replace: true })
+        navigate('/login', { replace: true, state: { backgroundLocation: LOGIN_OVERLAY_BACKGROUND } })
         return
       }
 
@@ -104,7 +113,7 @@ export default function UserInfoPage() {
     localStorage.removeItem(USER_REFRESH_TOKEN_KEY)
     localStorage.removeItem(USER_PROFILE_KEY)
     setShowLogoutConfirm(false)
-    navigate('/login', { replace: true })
+    navigate('/login', { replace: true, state: { backgroundLocation: LOGIN_OVERLAY_BACKGROUND } })
   }
 
   useEffect(() => {
@@ -117,7 +126,7 @@ export default function UserInfoPage() {
         localStorage.removeItem(USER_REFRESH_TOKEN_KEY)
         localStorage.removeItem(USER_PROFILE_KEY)
         setShowLogoutConfirm(false)
-        navigate('/login', { replace: true })
+        navigate('/login', { replace: true, state: { backgroundLocation: LOGIN_OVERLAY_BACKGROUND } })
       }
     }
 
