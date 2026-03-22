@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
+import PasswordInput from '../components/PasswordInput'
 import { normalizeEmail, normalizePhone, validateLoginForm } from '../utils/authValidation'
 
 const AUTH_HAS_ACCOUNT_KEY = 'kd_sarees_has_account'
@@ -185,10 +186,9 @@ export default function LoginPage({ isPopup = false, onClose }) {
                     Forgot password?
                   </Link>
                 </div>
-                <input
+                <PasswordInput
                   id="password"
                   name="password"
-                  type="password"
                   value={formData.password}
                   onChange={handleChange}
                   required

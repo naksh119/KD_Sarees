@@ -230,7 +230,8 @@ export default function BestsellerSareesSection({
 
   return (
     <section
-      className="w-full py-12 md:py-16"
+      id="best-sellers"
+      className="w-full py-12 md:py-16 scroll-mt-28"
       aria-label="Bestseller sarees"
     >
       <div className="mx-auto max-w-[1400px] px-4 sm:px-6 lg:px-8">

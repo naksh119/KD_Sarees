@@ -15,6 +15,9 @@ export default function FooterLinksColumn({ title, links }) {
             <a
               href={item.href}
               className="text-sm text-white/75 hover:text-white transition-colors"
+              {...(item.external
+                ? { target: '_blank', rel: 'noopener noreferrer' }
+                : {})}
             >
               {item.label}
             </a>

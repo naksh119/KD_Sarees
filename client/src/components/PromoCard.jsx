@@ -1,6 +1,6 @@
 /**
  * PromoCard – Single card for Saree Store section.
- * Full-bleed image with dark bottom overlay and uppercase label (e.g. "Sudathi GOLD", "BESTSELLERS").
+ * Full-bleed image with dark bottom overlay and optional uppercase label.
  */
 
 export default function PromoCard({ imageSrc, imageAlt, label, href = '#' }) {

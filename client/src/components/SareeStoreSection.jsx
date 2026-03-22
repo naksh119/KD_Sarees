@@ -12,7 +12,7 @@ import centerCardImage from '../assets/images/sareeimage3.jpg';
 const DEFAULT_PROMOS = [
   {
     imageSrc: cornerCardImage,
-    imageAlt: 'Sudathi Gold collection',
+    imageAlt: 'KD Sarees collection',
     label: '',
     href: '#',
   },

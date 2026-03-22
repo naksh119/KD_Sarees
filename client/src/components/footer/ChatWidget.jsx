@@ -2,12 +2,12 @@
  * Floating chat widget – WhatsApp icon, fixed at bottom-right.
  */
 
-const WHATSAPP_LINK = 'https://api.whatsapp.com/send/?phone=919685187167&text=Hello%21+I+am+interested+in+your+product';
+import { WHATSAPP_URL } from '../../siteLinks';
 
 export default function ChatWidget() {
   return (
     <a
-      href={WHATSAPP_LINK}
+      href={WHATSAPP_URL}
       target="_blank"
       rel="noopener noreferrer"
       className="fixed bottom-6 right-6 z-50 flex h-12 w-12 items-center justify-center rounded-full bg-[#25D366] text-white shadow-lg hover:bg-[#20bd5a] transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[#25D366] focus-visible:ring-offset-2 focus-visible:ring-offset-[#0f172a]"

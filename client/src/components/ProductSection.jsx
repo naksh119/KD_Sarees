@@ -18,7 +18,8 @@ export default function ProductSection({
 
   return (
     <section
-      className="w-full py-12 md:py-16"
+      id="new-arrivals"
+      className="w-full py-12 md:py-16 scroll-mt-28"
       aria-labelledby="product-section-heading"
     >
       <div className="mx-auto max-w-[1400px] px-4 sm:px-6 lg:px-8">

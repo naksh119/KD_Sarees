@@ -3,20 +3,15 @@
  */
 
 const TRENDING_TERMS = [
-  'Sudathi Gold',
-  'Sarees Saturday',
-  'Silk Saree Sale',
-  'Shark Tank Sarees Sale',
-  'Bestseller Saree Sale',
-  'Summer Saree Sale',
-  'Monsoon Sale',
-  'Festive Sarees Sale',
-  'Rakshabandhan Sale',
-  'Ganesh Chaturthi Sale',
-  'Republic Day Sale',
-  'Year End Sale',
-  'Makar Sankranti Sale',
-  'Onam Sarees Sale',
+  'Clothing',
+  'Gorget',
+  'Pethni',
+  'Banarsi',
+  'Tishu',
+  'Ready made blouse',
+  'Handwork',
+  'New Arrivals',
+  'Best Sellers',
 ];
 
 export default function FooterBottomBar() {
