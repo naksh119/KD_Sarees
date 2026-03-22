@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import ConfirmPopup from '../components/ConfirmPopup'
+import ReviewSuccessPopup from '../components/ReviewSuccessPopup'
 import { api } from '../utils/api'
 import { parseProductCsv, PRODUCT_CSV_TEMPLATE } from '../utils/parseProductCsv'
 
@@ -121,13 +122,15 @@ export default function AdminDashboardPage() {
   const [editingId, setEditingId] = useState(null)
   const [error, setError] = useState('')
   const [successMessage, setSuccessMessage] = useState('')
-  const [offerSuccessMessage, setOfferSuccessMessage] = useState('')
   const [activeSection, setActiveSection] = useState('overview')
   const [offers, setOffers] = useState([])
   const [offerFormData, setOfferFormData] = useState(initialOfferForm)
   const [offerError, setOfferError] = useState('')
   const [offerLoading, setOfferLoading] = useState(false)
   const [offersListLoading, setOffersListLoading] = useState(true)
+  const [offerToggleLoadingId, setOfferToggleLoadingId] = useState(null)
+  const [offerPendingDelete, setOfferPendingDelete] = useState(null)
+  const [offerStatusSuccessPopup, setOfferStatusSuccessPopup] = useState(null)
   const [editingOfferId, setEditingOfferId] = useState(null)
   const [reviews, setReviews] = useState([])
   const [reviewsListLoading, setReviewsListLoading] = useState(true)
@@ -510,7 +513,6 @@ export default function AdminDashboardPage() {
   const handleOfferSubmit = async (event) => {
     event.preventDefault()
     setOfferError('')
-    setOfferSuccessMessage('')
 
     if (!offerFormData.title || !offerFormData.description || !offerFormData.startsAt || !offerFormData.endsAt) {
       setOfferError('Please fill title, description, start date and end date.')
@@ -537,11 +539,17 @@ export default function AdminDashboardPage() {
       if (editingOfferId) {
         const data = await api.updateOffer(editingOfferId, payload)
         setOffers((prev) => prev.map((item) => (item._id === data._id ? data : item)))
-        setOfferSuccessMessage('Offer updated successfully.')
+        setOfferStatusSuccessPopup({
+          message: 'Offer updated successfully',
+          description: 'Your changes have been saved and will show in the store ticker.',
+        })
       } else {
         const data = await api.createOffer(payload)
         setOffers((prev) => [data, ...prev])
-        setOfferSuccessMessage('Offer created successfully.')
+        setOfferStatusSuccessPopup({
+          message: 'Congratulations!',
+          description: 'Your offer has been published successfully. It will appear in the top UI ticker for customers.',
+        })
       }
       resetOfferForm()
     } catch (err) {
@@ -558,25 +566,46 @@ export default function AdminDashboardPage() {
       return
     }
 
+    setOfferToggleLoadingId(offer._id)
     try {
+      setOfferError('')
       const data = await api.updateOffer(offer._id, { isActive: !offer.isActive })
       setOffers((prev) => prev.map((item) => (item._id === data._id ? data : item)))
+      setOfferStatusSuccessPopup(
+        data.isActive
+          ? {
+              message: 'Offer activated successfully',
+              description: 'This offer is now active and visible to customers.',
+            }
+          : {
+              message: 'Offer deactivated successfully',
+              description: 'This offer is inactive and will not apply until you activate it again.',
+            }
+      )
     } catch (err) {
       setOfferError(err.message || 'Unable to update offer')
+    } finally {
+      setOfferToggleLoadingId(null)
     }
   }
 
-  const deleteOffer = async (id) => {
+  const confirmDeleteOffer = async () => {
+    const pending = offerPendingDelete
+    if (!pending) return
+
     const token = localStorage.getItem(ADMIN_TOKEN_KEY)
     if (!token) {
       setOfferError('Admin token missing. Please login again.')
+      setOfferPendingDelete(null)
       return
     }
 
+    setOfferError('')
     setAdminDeleteLoading(true)
     try {
-      await api.deleteOffer(id)
-      setOffers((prev) => prev.filter((item) => item._id !== id))
+      await api.deleteOffer(pending._id)
+      setOffers((prev) => prev.filter((item) => item._id !== pending._id))
+      setOfferPendingDelete(null)
     } catch (err) {
       setOfferError(err.message || 'Unable to delete offer')
     } finally {
@@ -584,9 +613,10 @@ export default function AdminDashboardPage() {
     }
   }
 
+  const offerDeleteLabel = offerPendingDelete?.title?.trim() || 'this offer'
+
   const editOffer = (offer) => {
     setOfferError('')
-    setOfferSuccessMessage('')
     setEditingOfferId(offer._id)
     setOfferFormData({
       title: offer.title || '',
@@ -953,7 +983,6 @@ export default function AdminDashboardPage() {
               )}
             </form>
             {offerError && <p className="text-sm text-red-600 mt-3">{offerError}</p>}
-            {offerSuccessMessage && <p className="text-sm text-emerald-700 mt-3">{offerSuccessMessage}</p>}
             </section>
           )}
 
@@ -997,7 +1026,9 @@ export default function AdminDashboardPage() {
               <p className="text-sm text-slate-600">No offers created yet.</p>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-                {offers.map((offer) => (
+                {offers.map((offer) => {
+                  const isOfferToggleLoading = offerToggleLoadingId === offer._id
+                  return (
                   <article key={offer._id} className="rounded-lg border border-slate-200 p-3">
                     <div className="flex items-start justify-between gap-2">
                       <p className="text-sm font-semibold text-slate-900">{offer.title}</p>
@@ -1033,24 +1064,44 @@ export default function AdminDashboardPage() {
                       <button
                         type="button"
                         onClick={() => toggleOfferStatus(offer)}
-                        className={`flex-1 rounded-md px-2.5 py-1.5 text-xs font-medium transition-colors ${
+                        disabled={isOfferToggleLoading}
+                        aria-busy={isOfferToggleLoading}
+                        aria-label={
+                          isOfferToggleLoading
+                            ? 'Updating offer status'
+                            : offer.isActive
+                              ? 'Deactivate offer'
+                              : 'Activate offer'
+                        }
+                        className={`flex-1 inline-flex min-h-[2.125rem] items-center justify-center rounded-md px-2.5 py-1.5 text-xs font-medium transition-colors disabled:cursor-wait ${
                           offer.isActive
-                            ? 'bg-[#c4a77d] text-[#2c1810] hover:bg-[#b8956a]'
-                            : 'border border-[#c4a77d] bg-white text-[#2c1810] hover:bg-[#c4a77d]/20'
+                            ? 'bg-[#c4a77d] text-[#2c1810] hover:bg-[#b8956a] disabled:hover:bg-[#c4a77d]'
+                            : 'border border-[#c4a77d] bg-white text-[#2c1810] hover:bg-[#c4a77d]/20 disabled:hover:bg-white'
                         }`}
                       >
-                        {offer.isActive ? 'Active' : 'Inactive'}
+                        {isOfferToggleLoading ? (
+                          <span
+                            className="h-4 w-4 shrink-0 animate-spin rounded-full border-2 border-[#2c1810]/25 border-t-[#2c1810]"
+                            role="presentation"
+                            aria-hidden
+                          />
+                        ) : (
+                          (offer.isActive ? 'Deactivate' : 'Activate')
+                        )}
                       </button>
                       <button
                         type="button"
-                        onClick={() => deleteOffer(offer._id)}
+                        onClick={() =>
+                          setOfferPendingDelete({ _id: offer._id, title: offer.title || '' })
+                        }
                         className="flex-1 rounded-md bg-[#c4a77d] px-2.5 py-1.5 text-xs font-medium text-[#2c1810] transition-colors hover:bg-[#b8956a]"
                       >
                         Delete
                       </button>
                     </div>
                   </article>
-                ))}
+                  )
+                })}
               </div>
             )}
             </section>
@@ -1895,6 +1946,23 @@ export default function AdminDashboardPage() {
           )}
         </section>
       </div>
+      <ReviewSuccessPopup
+        isOpen={Boolean(offerStatusSuccessPopup)}
+        onClose={() => setOfferStatusSuccessPopup(null)}
+        message={offerStatusSuccessPopup?.message ?? 'Success'}
+        description={offerStatusSuccessPopup?.description ?? ''}
+      />
+      <ConfirmPopup
+        isOpen={Boolean(offerPendingDelete)}
+        title="Delete this offer?"
+        message={`Are you sure you want to delete "${offerDeleteLabel}"? This action cannot be undone.`}
+        confirmText="Delete offer"
+        cancelText="Cancel"
+        onConfirm={confirmDeleteOffer}
+        onCancel={() => {
+          if (!adminDeleteLoading) setOfferPendingDelete(null)
+        }}
+      />
       <ConfirmPopup
         isOpen={Boolean(userPendingDelete)}
         title={`Delete ${userDeleteLabel}?`}
