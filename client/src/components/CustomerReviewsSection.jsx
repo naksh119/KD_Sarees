@@ -5,6 +5,7 @@
 
 import { useRef, useEffect, useState, useMemo } from 'react';
 import ReviewCard from './ReviewCard';
+import ReviewCardSkeleton from './ReviewCardSkeleton';
 import ReviewSuccessPopup from './ReviewSuccessPopup';
 
 const DESKTOP_CARD_WIDTH = 160;
@@ -343,6 +344,7 @@ function AddReviewForm({ onSubmit, onCancel }) {
 
 export default function CustomerReviewsSection({
   reviews = [],
+  isLoading = false,
   autoScrollIntervalMs = 4000,
   onAddReview,
 }) {
@@ -423,7 +425,7 @@ export default function CustomerReviewsSection({
   };
 
   useEffect(() => {
-    if (isPaused) return;
+    if (isLoading || isPaused) return;
     const id = setInterval(() => {
       if (!scrollRef.current) return;
       const el = scrollRef.current;
@@ -439,12 +441,13 @@ export default function CustomerReviewsSection({
       }
     }, autoScrollIntervalMs);
     return () => clearInterval(id);
-  }, [isPaused, autoScrollIntervalMs, isMobile, pageWidth]);
+  }, [isLoading, isPaused, autoScrollIntervalMs, isMobile, pageWidth]);
 
   return (
     <section
       className="w-full py-12 md:py-16 bg-slate-50"
       aria-labelledby="customer-reviews-heading"
+      aria-busy={isLoading}
     >
       <div className="mx-auto max-w-[1400px] px-4 sm:px-6 lg:px-8">
         <h2
@@ -509,7 +512,54 @@ export default function CustomerReviewsSection({
           variant="error"
         />
 
-        {displayReviews.length === 0 ? (
+        {isLoading ? (
+          <div
+            className="relative mt-8 flex justify-center overflow-hidden"
+            role="status"
+            aria-label="Loading reviews"
+          >
+            <div
+              className="relative flex items-center justify-center gap-2 px-2"
+              style={{ width: isMobile ? '100%' : pageWidth + 96 }}
+            >
+              {!isMobile ? (
+                <div
+                  className="z-10 flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-slate-200 bg-slate-100 opacity-50"
+                  aria-hidden
+                >
+                  <svg className="h-5 w-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                  </svg>
+                </div>
+              ) : null}
+              <div className="shrink-0 overflow-hidden" style={{ width: isMobile ? '100%' : pageWidth }}>
+                <div
+                  className="flex justify-center"
+                  style={{
+                    width: isMobile ? '100%' : pageWidth,
+                    gap: CARD_GAP,
+                  }}
+                >
+                  {Array.from({ length: cardsPerPage }, (_, i) => (
+                    <div key={`review-skel-${i}`} className="shrink-0" style={{ width: cardWidth }}>
+                      <ReviewCardSkeleton />
+                    </div>
+                  ))}
+                </div>
+              </div>
+              {!isMobile ? (
+                <div
+                  className="z-10 flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-slate-200 bg-slate-100 opacity-50"
+                  aria-hidden
+                >
+                  <svg className="h-5 w-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
+                </div>
+              ) : null}
+            </div>
+          </div>
+        ) : displayReviews.length === 0 ? (
           <p className="mt-8 text-center text-slate-600">
             No customer reviews yet. Be the first to share your experience.
           </p>
@@ -591,7 +641,7 @@ export default function CustomerReviewsSection({
         )}
 
         <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
-          {displayReviews.length > 0 ? (
+          {!isLoading && displayReviews.length > 0 ? (
             <button
               type="button"
               onClick={() => setViewAllOpen(true)}

@@ -178,7 +178,11 @@ function HomePage() {
         <SilkSareeSection />
         <BestsellerSareesSection />
         <StoryLookbookSection />
-        <CustomerReviewsSection reviews={reviewDataForUi} onAddReview={handleAddReview} />
+        <CustomerReviewsSection
+          reviews={reviewDataForUi}
+          isLoading={isLoadingProducts}
+          onAddReview={handleAddReview}
+        />
       </main>
       <Footer />
     </>
