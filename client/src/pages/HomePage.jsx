@@ -130,8 +130,8 @@ function HomePage() {
     }
   }
 
-  const handleToggleFavorite = (product) => {
-    toggleFavorite(product)
+  const handleToggleFavorite = async (product) => {
+    await toggleFavorite(product)
     setFavoritesCount(getFavorites().length)
   }
 

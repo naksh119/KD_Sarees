@@ -98,7 +98,8 @@ export const api = {
   deleteProduct: (id) => request(`/api/products/${id}`, { method: 'DELETE', auth: 'admin' }),
   getCategories: () => request('/api/categories'),
   createCategory: (payload) => request('/api/categories', { method: 'POST', body: payload, auth: 'admin' }),
-  updateCategory: (id, payload) => request(`/api/categories/${id}`, { method: 'PUT', body: payload, auth: 'admin' }),
+  updateCategory: (id, payload) =>
+    request(`/api/categories/${id}`, { method: 'PUT', body: payload, auth: 'admin' }),
   deleteCategory: (id) => request(`/api/categories/${id}`, { method: 'DELETE', auth: 'admin' }),
   /** Public list (active + in date window); cache-busted for ticker. */
   getPublicOffers: () => request(`/api/offers?_=${Date.now()}`),
@@ -112,7 +113,10 @@ export const api = {
   getCart: () => request('/api/cart', { auth: 'user' }),
   addToCart: (payload) => request('/api/cart/add', { method: 'POST', body: payload, auth: 'user' }),
   updateCartItem: (payload) => request('/api/cart/item', { method: 'PATCH', body: payload, auth: 'user' }),
-  removeCartItem: (payload) => request(`/api/cart/item/${payload?.productId || ''}`, { method: 'DELETE', auth: 'user' }),
+  removeCartItem: (payload) => {
+    const id = encodeURIComponent(String(payload?.productId ?? ''))
+    return request(`/api/cart/item/${id}`, { method: 'DELETE', auth: 'user' })
+  },
   clearCart: () => request('/api/cart/clear', { method: 'DELETE', auth: 'user' }),
   getFavorites: () => request('/api/favorites', { auth: 'user' }),
   addToFavorites: (payload) => request('/api/favorites/add', { method: 'POST', body: payload, auth: 'user' }),
@@ -120,6 +124,10 @@ export const api = {
   createOrder: (payload) => request('/api/orders', { method: 'POST', body: payload, auth: 'user' }),
   getMyOrders: () => request('/api/orders/my', { auth: 'user' }),
   getAdminOrders: () => request('/api/orders/admin/all', { auth: 'admin' }),
+  updateOrderStatus: (orderId, payload) =>
+    request(`/api/orders/${orderId}/status`, { method: 'PATCH', body: payload, auth: 'admin' }),
+  updatePaymentStatus: (paymentId, payload) =>
+    request(`/api/payments/${paymentId}/status`, { method: 'PATCH', body: payload, auth: 'admin' }),
   createPayment: (orderId, payload) =>
     request(`/api/payments/order/${orderId}`, { method: 'POST', body: payload, auth: 'user' }),
   listUsers: (role) => {

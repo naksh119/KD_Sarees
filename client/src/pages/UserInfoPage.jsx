@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { FaBoxOpen, FaHeart, FaMapMarkerAlt, FaSignOutAlt, FaUserCircle } from 'react-icons/fa'
 import { IoArrowBack } from 'react-icons/io5'
 import Navbar from '../components/Navbar'
+import CartSuccessPopup from '../components/CartSuccessPopup'
 import ConfirmPopup from '../components/ConfirmPopup'
 import ProductCard from '../components/ProductCard'
 import { api } from '../utils/api'
@@ -46,6 +47,8 @@ export default function UserInfoPage() {
   const [favorites, setFavorites] = useState([])
   const [deleteFavoriteTarget, setDeleteFavoriteTarget] = useState(null)
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false)
+  const [addingToCartProductId, setAddingToCartProductId] = useState('')
+  const [cartSuccess, setCartSuccess] = useState({ open: false, productTitle: '' })
 
   const token = localStorage.getItem(USER_TOKEN_KEY)
   const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'https://kd-sarees.onrender.com'
@@ -182,8 +185,38 @@ export default function UserInfoPage() {
     setDeleteFavoriteTarget(null)
   }
 
+  const handleAddToCart = async (productId) => {
+    if (!productId || addingToCartProductId === String(productId)) return
+    const productTitle =
+      favorites.find((p) => String(p.id) === String(productId))?.productTitle ?? ''
+    try {
+      setAddingToCartProductId(String(productId))
+      const hasUserToken = Boolean(localStorage.getItem('kd_sarees_token'))
+      if (!hasUserToken) {
+        navigate('/auth', { state: { backgroundLocation: location } })
+        return
+      }
+      const isMongoId = /^[a-f\d]{24}$/i.test(String(productId))
+      if (!isMongoId) {
+        throw new Error('Product is not synced from database yet. Please refresh and try again.')
+      }
+      await api.addToCart({ productId, quantity: 1 })
+      setCartSuccess({ open: true, productTitle })
+    } catch (err) {
+      window.alert(err.message || 'Unable to add item to cart')
+    } finally {
+      setAddingToCartProductId('')
+    }
+  }
+
   return (
     <>
+      <CartSuccessPopup
+        isOpen={cartSuccess.open}
+        onClose={() => setCartSuccess((s) => ({ ...s, open: false }))}
+        productTitle={cartSuccess.productTitle}
+        onViewCart={() => navigate('/cart')}
+      />
       <Navbar />
       <main className="min-h-[calc(100vh-130px)] bg-[#f7f7f8] px-4 py-3 md:px-8 lg:px-10">
         <div className="max-w-[1280px] mx-auto">
@@ -340,6 +373,8 @@ export default function UserInfoPage() {
                             isFavorite
                             showDeleteIcon
                             onDelete={() => setDeleteFavoriteTarget(product)}
+                            onAddToCart={handleAddToCart}
+                            isAddToCartLoading={addingToCartProductId === String(product.id)}
                           />
                         ))}
                       </div>

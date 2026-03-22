@@ -69,6 +69,10 @@ const DEFAULT_CATEGORY_NAMES = [
   'Handwork',
 ]
 
+const ORDER_STATUS_OPTIONS = ['pending', 'processing', 'shipped', 'delivered', 'cancelled']
+
+const PAYMENT_RECORD_STATUS_OPTIONS = ['created', 'success', 'failed', 'refunded']
+
 const fileToDataUrl = (file) =>
   new Promise((resolve, reject) => {
     const reader = new FileReader()
@@ -126,7 +130,6 @@ export default function AdminDashboardPage() {
   const [categories, setCategories] = useState([])
   const [editingId, setEditingId] = useState(null)
   const [error, setError] = useState('')
-  const [successMessage, setSuccessMessage] = useState('')
   const [activeSection, setActiveSection] = useState('overview')
   const [offers, setOffers] = useState([])
   const [offerFormData, setOfferFormData] = useState(initialOfferForm)
@@ -135,18 +138,19 @@ export default function AdminDashboardPage() {
   const [offersListLoading, setOffersListLoading] = useState(true)
   const [offerToggleLoadingId, setOfferToggleLoadingId] = useState(null)
   const [offerPendingDelete, setOfferPendingDelete] = useState(null)
-  const [offerStatusSuccessPopup, setOfferStatusSuccessPopup] = useState(null)
+  const [adminSuccessPopup, setAdminSuccessPopup] = useState(null)
   const [editingOfferId, setEditingOfferId] = useState(null)
   const [reviews, setReviews] = useState([])
   const [reviewsListLoading, setReviewsListLoading] = useState(true)
   const [reviewError, setReviewError] = useState('')
-  const [reviewSuccessMessage, setReviewSuccessMessage] = useState('')
   const [adminOrders, setAdminOrders] = useState([])
   const [ordersListLoading, setOrdersListLoading] = useState(false)
   const [ordersError, setOrdersError] = useState('')
   const [categoryFormData, setCategoryFormData] = useState(initialCategoryForm)
   const [categoryError, setCategoryError] = useState('')
-  const [categorySuccessMessage, setCategorySuccessMessage] = useState('')
+  const [editingCategoryId, setEditingCategoryId] = useState(null)
+  const [orderStatusUpdatingId, setOrderStatusUpdatingId] = useState(null)
+  const [paymentStatusUpdatingId, setPaymentStatusUpdatingId] = useState(null)
   const [previewImageUrl, setPreviewImageUrl] = useState('')
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false)
   const [usersList, setUsersList] = useState([])
@@ -155,7 +159,10 @@ export default function AdminDashboardPage() {
   const [usersSuccessMessage, setUsersSuccessMessage] = useState('')
   const [userPendingDelete, setUserPendingDelete] = useState(null)
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false)
-  const [adminDeleteLoading, setAdminDeleteLoading] = useState(false)
+  const [adminBusy, setAdminBusy] = useState(null)
+  const [productPendingDelete, setProductPendingDelete] = useState(null)
+  const [categoryPendingDelete, setCategoryPendingDelete] = useState(null)
+  const [reviewPendingDelete, setReviewPendingDelete] = useState(null)
   const [bulkImportLoading, setBulkImportLoading] = useState(false)
   const [bulkImportError, setBulkImportError] = useState('')
   const [bulkImportNote, setBulkImportNote] = useState('')
@@ -333,55 +340,130 @@ export default function AdminDashboardPage() {
 
   const resetCategoryMessages = () => {
     setCategoryError('')
-    setCategorySuccessMessage('')
+  }
+
+  const cancelCategoryEdit = () => {
+    setEditingCategoryId(null)
+    setCategoryFormData(initialCategoryForm)
+    resetCategoryMessages()
+  }
+
+  const startEditCategory = (cat) => {
+    resetCategoryMessages()
+    setEditingCategoryId(String(cat._id))
+    setCategoryFormData({
+      name: cat.name || '',
+      description: typeof cat.description === 'string' ? cat.description : '',
+    })
   }
 
   const handleCategorySubmit = async (event) => {
     event.preventDefault()
     resetCategoryMessages()
     if (!categoryFormData.name.trim()) {
-      setCategoryError('Please select a category name.')
+      setCategoryError(editingCategoryId ? 'Please enter a category name.' : 'Please select a category name.')
       return
     }
 
     try {
-      await api.createCategory({
-        name: categoryFormData.name.trim(),
-        description: categoryFormData.description.trim(),
-      })
-      const categoryData = await api.getCategories()
-      const normalized = normalizeCategoryList(categoryData)
-      setCategories(categoryData)
-      if (normalized.length > 0) {
-        const createdCategory = normalized.find(
-          (category) => category.name.toLowerCase() === categoryFormData.name.trim().toLowerCase(),
-        )
-        if (createdCategory) {
-          setFormData((prev) => ({ ...prev, category: createdCategory.id }))
+      setAdminBusy({ caption: editingCategoryId ? 'Saving category…' : 'Adding category…' })
+      if (editingCategoryId) {
+        await api.updateCategory(editingCategoryId, {
+          name: categoryFormData.name.trim(),
+          description: categoryFormData.description.trim(),
+        })
+        const categoryData = await api.getCategories()
+        setCategories(categoryData)
+        setEditingCategoryId(null)
+        setCategoryFormData(initialCategoryForm)
+        setAdminSuccessPopup({
+          message: 'Category updated successfully',
+          description: 'Your category changes are saved and available when adding products.',
+        })
+      } else {
+        await api.createCategory({
+          name: categoryFormData.name.trim(),
+          description: categoryFormData.description.trim(),
+        })
+        const categoryData = await api.getCategories()
+        const normalized = normalizeCategoryList(categoryData)
+        setCategories(categoryData)
+        if (normalized.length > 0) {
+          const createdCategory = normalized.find(
+            (category) => category.name.toLowerCase() === categoryFormData.name.trim().toLowerCase(),
+          )
+          if (createdCategory) {
+            setFormData((prev) => ({ ...prev, category: createdCategory.id }))
+          }
         }
+        setCategoryFormData(initialCategoryForm)
+        setAdminSuccessPopup({
+          message: 'Category added successfully',
+          description: 'You can assign products to this category from the form below.',
+        })
       }
-      setCategoryFormData(initialCategoryForm)
-      setCategorySuccessMessage('Category added successfully.')
     } catch (err) {
-      setCategoryError(err.message || 'Unable to add category')
+      setCategoryError(err.message || (editingCategoryId ? 'Unable to update category' : 'Unable to add category'))
+    } finally {
+      setAdminBusy(null)
     }
   }
 
-  const handleDeleteCategory = async (id) => {
+  const confirmDeleteCategory = async () => {
+    const pending = categoryPendingDelete
+    if (!pending) return
     resetCategoryMessages()
-    setAdminDeleteLoading(true)
+    if (editingCategoryId === pending.id) {
+      cancelCategoryEdit()
+    }
+    setAdminBusy({ caption: 'Deleting…' })
     try {
-      await api.deleteCategory(id)
+      await api.deleteCategory(pending.id)
       const categoryData = await api.getCategories()
       setCategories(categoryData)
-      if (formData.category === id) {
+      if (formData.category === pending.id) {
         setFormData((prev) => ({ ...prev, category: '' }))
       }
-      setCategorySuccessMessage('Category deleted successfully.')
+      setCategoryPendingDelete(null)
+      setAdminSuccessPopup({
+        message: 'Category deleted successfully',
+        description: 'Products that used this category may need to be reassigned.',
+      })
     } catch (err) {
       setCategoryError(err.message || 'Unable to delete category')
     } finally {
-      setAdminDeleteLoading(false)
+      setAdminBusy(null)
+    }
+  }
+
+  const handleOrderStatusChange = async (orderId, status) => {
+    setOrderStatusUpdatingId(orderId)
+    setOrdersError('')
+    try {
+      await api.updateOrderStatus(orderId, { status })
+      const data = await api.getAdminOrders()
+      setAdminOrders(Array.isArray(data) ? data : [])
+    } catch (err) {
+      setOrdersError(err.message || 'Unable to update order status')
+    } finally {
+      setOrderStatusUpdatingId(null)
+    }
+  }
+
+  const handlePaymentRecordStatusChange = async (paymentId, newStatus, previousStatus) => {
+    if (newStatus === previousStatus || newStatus === 'created') {
+      return
+    }
+    setPaymentStatusUpdatingId(paymentId)
+    setOrdersError('')
+    try {
+      await api.updatePaymentStatus(paymentId, { status: newStatus })
+      const data = await api.getAdminOrders()
+      setAdminOrders(Array.isArray(data) ? data : [])
+    } catch (err) {
+      setOrdersError(err.message || 'Unable to update payment status')
+    } finally {
+      setPaymentStatusUpdatingId(null)
     }
   }
 
@@ -445,12 +527,19 @@ export default function AdminDashboardPage() {
       }
 
       setBulkImportLoading(true)
+      setAdminBusy({ caption: 'Importing products…' })
       const result = await api.bulkCreateProducts(parsed)
       setBulkImportResult(result)
       if (result?.message) {
         setBulkImportNote(result.message)
       }
       await refreshProductList()
+      if (result?.createdCount > 0) {
+        setAdminSuccessPopup({
+          message: result.failedCount > 0 ? 'Import completed' : 'Import complete',
+          description: result.message || `${result.createdCount} product(s) added to the catalog.`,
+        })
+      }
     } catch (err) {
       setBulkImportError(err.message || 'Unable to import products')
       if (err.details) {
@@ -458,29 +547,37 @@ export default function AdminDashboardPage() {
       }
     } finally {
       setBulkImportLoading(false)
+      setAdminBusy(null)
       event.target.value = ''
     }
   }
 
-  const handleDelete = async (id) => {
-    setAdminDeleteLoading(true)
+  const confirmDeleteProduct = async () => {
+    const pending = productPendingDelete
+    if (!pending) return
+    setError('')
+    setAdminBusy({ caption: 'Deleting…' })
     try {
-      await api.deleteProduct(id)
-      setProducts((prev) => prev.filter((item) => item.id !== id))
-      if (editingId === id) {
+      await api.deleteProduct(pending.id)
+      setProducts((prev) => prev.filter((item) => item.id !== pending.id))
+      if (editingId === pending.id) {
         resetForm()
       }
+      setProductPendingDelete(null)
+      setAdminSuccessPopup({
+        message: 'Product deleted successfully',
+        description: 'The catalog has been updated.',
+      })
     } catch (err) {
       setError(err.message || 'Unable to delete product')
     } finally {
-      setAdminDeleteLoading(false)
+      setAdminBusy(null)
     }
   }
 
   const handleSubmit = async (event) => {
     event.preventDefault()
     setError('')
-    setSuccessMessage('')
 
     if (!formData.name || !formData.price || !formData.category || !formData.stock) {
       setError('Please fill all product fields.')
@@ -501,17 +598,26 @@ export default function AdminDashboardPage() {
     }
 
     try {
+      setAdminBusy({ caption: editingId !== null ? 'Saving product…' : 'Adding product…' })
       if (editingId !== null) {
         await api.updateProduct(editingId, payload)
-        setSuccessMessage('Product updated successfully.')
+        setAdminSuccessPopup({
+          message: 'Product updated successfully',
+          description: 'Your catalog changes are live for customers.',
+        })
       } else {
         await api.createProduct(payload)
-        setSuccessMessage('Product added successfully.')
+        setAdminSuccessPopup({
+          message: 'Product added successfully',
+          description: 'The new product is now visible in your store catalog.',
+        })
       }
       await refreshProductList()
       resetForm()
     } catch (err) {
       setError(err.message || 'Unable to save product')
+    } finally {
+      setAdminBusy(null)
     }
   }
 
@@ -555,14 +661,14 @@ export default function AdminDashboardPage() {
       if (editingOfferId) {
         const data = await api.updateOffer(editingOfferId, payload)
         setOffers((prev) => prev.map((item) => (item._id === data._id ? data : item)))
-        setOfferStatusSuccessPopup({
+        setAdminSuccessPopup({
           message: 'Offer updated successfully',
           description: 'Your changes have been saved and will show in the store ticker.',
         })
       } else {
         const data = await api.createOffer(payload)
         setOffers((prev) => [data, ...prev])
-        setOfferStatusSuccessPopup({
+        setAdminSuccessPopup({
           message: 'Congratulations!',
           description: 'Your offer has been published successfully. It will appear in the top UI ticker for customers.',
         })
@@ -588,7 +694,7 @@ export default function AdminDashboardPage() {
       setOfferError('')
       const data = await api.updateOffer(offer._id, { isActive: !offer.isActive })
       setOffers((prev) => prev.map((item) => (item._id === data._id ? data : item)))
-      setOfferStatusSuccessPopup(
+      setAdminSuccessPopup(
         data.isActive
           ? {
               message: 'Offer activated successfully',
@@ -619,16 +725,20 @@ export default function AdminDashboardPage() {
     }
 
     setOfferError('')
-    setAdminDeleteLoading(true)
+    setAdminBusy({ caption: 'Deleting…' })
     try {
       await api.deleteOffer(pending._id)
       setOffers((prev) => prev.filter((item) => item._id !== pending._id))
       setOfferPendingDelete(null)
       notifyOffersInvalidated()
+      setAdminSuccessPopup({
+        message: 'Offer deleted successfully',
+        description: 'Customers will no longer see this offer in the ticker.',
+      })
     } catch (err) {
       setOfferError(err.message || 'Unable to delete offer')
     } finally {
-      setAdminDeleteLoading(false)
+      setAdminBusy(null)
     }
   }
 
@@ -647,23 +757,23 @@ export default function AdminDashboardPage() {
     })
   }
 
-  const handleDeleteReview = async (id) => {
+  const confirmDeleteReview = async () => {
+    const pending = reviewPendingDelete
+    if (!pending) return
     setReviewError('')
-    setReviewSuccessMessage('')
-    const shouldDelete = window.confirm('Delete this review? This action cannot be undone.')
-    if (!shouldDelete) {
-      return
-    }
-
-    setAdminDeleteLoading(true)
+    setAdminBusy({ caption: 'Deleting…' })
     try {
-      await api.deleteReview(id)
-      setReviews((prev) => prev.filter((review) => review._id !== id))
-      setReviewSuccessMessage('Review deleted successfully.')
+      await api.deleteReview(pending.id)
+      setReviews((prev) => prev.filter((review) => review._id !== pending.id))
+      setReviewPendingDelete(null)
+      setAdminSuccessPopup({
+        message: 'Review deleted successfully',
+        description: 'The review has been removed from the storefront.',
+      })
     } catch (err) {
       setReviewError(err.message || 'Unable to delete review')
     } finally {
-      setAdminDeleteLoading(false)
+      setAdminBusy(null)
     }
   }
 
@@ -674,7 +784,7 @@ export default function AdminDashboardPage() {
     userDeleteSubmittingRef.current = true
     setUsersError('')
     setUsersSuccessMessage('')
-    setAdminDeleteLoading(true)
+    setAdminBusy({ caption: 'Deleting…' })
     try {
       await api.deleteUser(user._id)
       setUserPendingDelete(null)
@@ -686,11 +796,13 @@ export default function AdminDashboardPage() {
       setUsersError(err.message || 'Unable to delete user')
     } finally {
       userDeleteSubmittingRef.current = false
-      setAdminDeleteLoading(false)
+      setAdminBusy(null)
     }
   }
 
   const userDeleteLabel = userPendingDelete?.name || userPendingDelete?.email || 'this user'
+  const productDeleteLabel = productPendingDelete?.name || 'this product'
+  const categoryDeleteLabel = categoryPendingDelete?.name || 'this category'
 
   const handleLogout = () => {
     localStorage.removeItem(ADMIN_SESSION_KEY)
@@ -1179,7 +1291,6 @@ export default function AdminDashboardPage() {
                 <p className="text-sm text-slate-600 mt-1">Delete inappropriate or unwanted reviews.</p>
               </div>
               {reviewError && <p className="text-sm text-red-600 mb-3">{reviewError}</p>}
-              {reviewSuccessMessage && <p className="text-sm text-emerald-700 mb-3">{reviewSuccessMessage}</p>}
               {reviewsListLoading ? (
                 <div
                   className="flex flex-col items-center justify-center gap-3 py-16"
@@ -1206,8 +1317,9 @@ export default function AdminDashboardPage() {
                       <p className="text-sm text-slate-700 mt-2">{review.comment}</p>
                       <button
                         type="button"
-                        onClick={() => handleDeleteReview(review._id)}
-                        className="mt-3 w-full rounded-md bg-[#c4a77d] px-2.5 py-1.5 text-xs font-medium text-[#2c1810] transition-colors hover:bg-[#b8956a]"
+                        onClick={() => setReviewPendingDelete({ id: review._id })}
+                        disabled={Boolean(adminBusy)}
+                        className="mt-3 w-full rounded-md bg-[#c4a77d] px-2.5 py-1.5 text-xs font-medium text-[#2c1810] transition-colors hover:bg-[#b8956a] disabled:opacity-60"
                       >
                         Delete Review
                       </button>
@@ -1252,7 +1364,7 @@ export default function AdminDashboardPage() {
                         <th className="px-3 py-2.5 font-semibold">Order</th>
                         <th className="px-3 py-2.5 font-semibold">Customer</th>
                         <th className="px-3 py-2.5 font-semibold">Total</th>
-                        <th className="px-3 py-2.5 font-semibold">Status</th>
+                        <th className="px-3 py-2.5 font-semibold">Order status</th>
                         <th className="px-3 py-2.5 font-semibold">Payment</th>
                         <th className="px-3 py-2.5 font-semibold">Placed</th>
                       </tr>
@@ -1270,15 +1382,55 @@ export default function AdminDashboardPage() {
                           <td className="px-3 py-2.5 whitespace-nowrap">
                             Rs. {Number(order.totalAmount || 0).toLocaleString('en-IN')}
                           </td>
-                          <td className="px-3 py-2.5">
-                            <span className="inline-flex rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-800">
-                              {order.status || '—'}
-                            </span>
+                          <td className="px-3 py-2.5 align-top">
+                            <select
+                              value={
+                                ORDER_STATUS_OPTIONS.includes(order.status) ? order.status : 'pending'
+                              }
+                              onChange={(e) => handleOrderStatusChange(order._id, e.target.value)}
+                              disabled={orderStatusUpdatingId === order._id}
+                              className="max-w-[11rem] rounded-md border border-slate-200 bg-white px-2 py-1.5 text-xs font-medium text-slate-800 disabled:opacity-60"
+                              aria-label={`Order status for ${String(order._id).slice(-8)}`}
+                            >
+                              {ORDER_STATUS_OPTIONS.map((s) => (
+                                <option key={s} value={s}>
+                                  {s}
+                                </option>
+                              ))}
+                            </select>
                           </td>
-                          <td className="px-3 py-2.5">
-                            <span className="inline-flex rounded-full bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-900">
-                              {order.paymentStatus || '—'}
-                            </span>
+                          <td className="px-3 py-2.5 align-top">
+                            {order.latestPayment?._id ? (
+                              <div className="space-y-1">
+                                <select
+                                  value={order.latestPayment.status}
+                                  onChange={(e) =>
+                                    handlePaymentRecordStatusChange(
+                                      order.latestPayment._id,
+                                      e.target.value,
+                                      order.latestPayment.status,
+                                    )
+                                  }
+                                  disabled={paymentStatusUpdatingId === order.latestPayment._id}
+                                  className="max-w-[11rem] rounded-md border border-amber-200 bg-amber-50/80 px-2 py-1.5 text-xs font-medium text-amber-900 disabled:opacity-60"
+                                  aria-label={`Payment record status for order ${String(order._id).slice(-8)}`}
+                                >
+                                  {PAYMENT_RECORD_STATUS_OPTIONS.map((s) => (
+                                    <option key={s} value={s}>
+                                      {s}
+                                    </option>
+                                  ))}
+                                </select>
+                                <p className="text-[11px] text-slate-500">
+                                  Order: {order.paymentStatus || '—'} · {order.latestPayment.method || '—'}
+                                </p>
+                              </div>
+                            ) : (
+                              <span className="inline-flex rounded-full bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-900">
+                                {order.paymentStatus || '—'}
+                                <span className="text-slate-500 font-normal ml-1">(no payment record)</span>
+                              </span>
+                            )}
                           </td>
                           <td className="px-3 py-2.5 text-slate-600 whitespace-nowrap">
                             {formatUserDate(order.createdAt)}
@@ -1627,19 +1779,30 @@ export default function AdminDashboardPage() {
                 </div>
                 <form className="space-y-3 mb-4" onSubmit={handleCategorySubmit}>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    <select
-                      name="name"
-                      value={categoryFormData.name}
-                      onChange={handleCategoryChange}
-                      className="w-full rounded-lg border border-gray-300 bg-white px-3 py-3 text-base text-gray-900 sm:py-2.5 sm:text-sm"
-                    >
-                      <option value="">Select category</option>
-                      {DEFAULT_CATEGORY_NAMES.map((name) => (
-                        <option key={name} value={name}>
-                          {name}
-                        </option>
-                      ))}
-                    </select>
+                    {editingCategoryId ? (
+                      <input
+                        name="name"
+                        type="text"
+                        placeholder="Category name"
+                        value={categoryFormData.name}
+                        onChange={handleCategoryChange}
+                        className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm focus:border-[#191970] focus:outline-none"
+                      />
+                    ) : (
+                      <select
+                        name="name"
+                        value={categoryFormData.name}
+                        onChange={handleCategoryChange}
+                        className="w-full rounded-lg border border-gray-300 bg-white px-3 py-3 text-base text-gray-900 sm:py-2.5 sm:text-sm"
+                      >
+                        <option value="">Select category</option>
+                        {DEFAULT_CATEGORY_NAMES.map((name) => (
+                          <option key={name} value={name}>
+                            {name}
+                          </option>
+                        ))}
+                      </select>
+                    )}
                     <input
                       name="description"
                       type="text"
@@ -1649,15 +1812,65 @@ export default function AdminDashboardPage() {
                       className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm focus:border-[#191970] focus:outline-none"
                     />
                   </div>
-                  <button
-                    type="submit"
-                    className="rounded-lg bg-[#c4a77d] px-4 py-2.5 text-sm font-medium text-[#2c1810] transition hover:bg-[#b8956a]"
-                  >
-                    Add Category
-                  </button>
+                  <div className="flex flex-wrap gap-2">
+                    <button
+                      type="submit"
+                      disabled={Boolean(adminBusy)}
+                      className="rounded-lg bg-[#c4a77d] px-4 py-2.5 text-sm font-medium text-[#2c1810] transition hover:bg-[#b8956a] disabled:opacity-60"
+                    >
+                      {editingCategoryId ? 'Update category' : 'Add Category'}
+                    </button>
+                    {editingCategoryId ? (
+                      <button
+                        type="button"
+                        onClick={cancelCategoryEdit}
+                        className="rounded-lg border border-[#c4a77d] bg-white px-4 py-2.5 text-sm font-medium text-[#2c1810] transition hover:bg-[#c4a77d]/15"
+                      >
+                        Cancel edit
+                      </button>
+                    ) : null}
+                  </div>
                 </form>
+                {Array.isArray(categories) && categories.length > 0 ? (
+                  <ul className="mt-4 divide-y divide-slate-200 rounded-lg border border-slate-200 bg-slate-50/80">
+                    {categories.map((cat) => {
+                      const cid = String(cat._id)
+                      return (
+                        <li
+                          key={cid}
+                          className="flex flex-col gap-2 px-3 py-3 sm:flex-row sm:items-center sm:justify-between"
+                        >
+                          <div className="min-w-0">
+                            <p className="font-medium text-slate-900">{cat.name}</p>
+                            <p className="text-xs text-slate-600 line-clamp-2">
+                              {cat.description ? cat.description : '—'}
+                            </p>
+                          </div>
+                          <div className="flex shrink-0 gap-2">
+                            <button
+                              type="button"
+                              onClick={() => startEditCategory(cat)}
+                              className="rounded-md bg-white px-3 py-1.5 text-xs font-medium text-[#2c1810] ring-1 ring-[#c4a77d] transition hover:bg-[#c4a77d]/15"
+                            >
+                              Edit
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setCategoryPendingDelete({ id: cid, name: cat.name || 'this category' })}
+                              disabled={Boolean(adminBusy)}
+                              className="rounded-md bg-[#c4a77d] px-3 py-1.5 text-xs font-medium text-[#2c1810] transition hover:bg-[#b8956a] disabled:opacity-60"
+                            >
+                              Delete
+                            </button>
+                          </div>
+                        </li>
+                      )
+                    })}
+                  </ul>
+                ) : (
+                  <p className="mt-3 text-sm text-slate-600">No categories yet. Add one above.</p>
+                )}
                 {categoryError && <p className="text-sm text-red-600 mb-3">{categoryError}</p>}
-                {categorySuccessMessage && <p className="text-sm text-emerald-700 mb-3">{categorySuccessMessage}</p>}
                 </div>
               )}
 
@@ -1754,12 +1967,12 @@ export default function AdminDashboardPage() {
                   </div>
 
                   {error && <p className="text-sm text-red-600">{error}</p>}
-                  {successMessage && <p className="text-sm text-emerald-700">{successMessage}</p>}
 
                   <div className="flex gap-2">
                     <button
                       type="submit"
-                      className="flex-1 rounded-lg bg-[#c4a77d] py-2.5 text-sm font-medium text-[#2c1810] transition hover:bg-[#b8956a]"
+                      disabled={Boolean(adminBusy)}
+                      className="flex-1 rounded-lg bg-[#c4a77d] py-2.5 text-sm font-medium text-[#2c1810] transition hover:bg-[#b8956a] disabled:opacity-60"
                     >
                       {editingId ? 'Save Changes' : 'Add Product'}
                     </button>
@@ -1913,8 +2126,11 @@ export default function AdminDashboardPage() {
                             </button>
                             <button
                               type="button"
-                              onClick={() => handleDelete(product.id)}
-                              className="flex-1 rounded-md bg-[#c4a77d] px-2.5 py-1.5 text-xs font-medium text-[#2c1810] transition-colors hover:bg-[#b8956a]"
+                              onClick={() =>
+                                setProductPendingDelete({ id: product.id, name: product.name || 'this product' })
+                              }
+                              disabled={Boolean(adminBusy)}
+                              className="flex-1 rounded-md bg-[#c4a77d] px-2.5 py-1.5 text-xs font-medium text-[#2c1810] transition-colors hover:bg-[#b8956a] disabled:opacity-60"
                             >
                               Delete
                             </button>
@@ -2011,10 +2227,10 @@ export default function AdminDashboardPage() {
         </section>
       </div>
       <ReviewSuccessPopup
-        isOpen={Boolean(offerStatusSuccessPopup)}
-        onClose={() => setOfferStatusSuccessPopup(null)}
-        message={offerStatusSuccessPopup?.message ?? 'Success'}
-        description={offerStatusSuccessPopup?.description ?? ''}
+        isOpen={Boolean(adminSuccessPopup)}
+        onClose={() => setAdminSuccessPopup(null)}
+        message={adminSuccessPopup?.message ?? 'Success'}
+        description={adminSuccessPopup?.description ?? ''}
       />
       <ConfirmPopup
         isOpen={Boolean(offerPendingDelete)}
@@ -2024,7 +2240,40 @@ export default function AdminDashboardPage() {
         cancelText="Cancel"
         onConfirm={confirmDeleteOffer}
         onCancel={() => {
-          if (!adminDeleteLoading) setOfferPendingDelete(null)
+          if (!adminBusy) setOfferPendingDelete(null)
+        }}
+      />
+      <ConfirmPopup
+        isOpen={Boolean(productPendingDelete)}
+        title="Delete this product?"
+        message={`Are you sure you want to delete "${productDeleteLabel}"? This action cannot be undone.`}
+        confirmText="Delete product"
+        cancelText="Cancel"
+        onConfirm={confirmDeleteProduct}
+        onCancel={() => {
+          if (!adminBusy) setProductPendingDelete(null)
+        }}
+      />
+      <ConfirmPopup
+        isOpen={Boolean(categoryPendingDelete)}
+        title="Delete this category?"
+        message={`Are you sure you want to delete "${categoryDeleteLabel}"? Products may need to be reassigned.`}
+        confirmText="Delete category"
+        cancelText="Cancel"
+        onConfirm={confirmDeleteCategory}
+        onCancel={() => {
+          if (!adminBusy) setCategoryPendingDelete(null)
+        }}
+      />
+      <ConfirmPopup
+        isOpen={Boolean(reviewPendingDelete)}
+        title="Delete this review?"
+        message="This will remove the review from your storefront. This action cannot be undone."
+        confirmText="Delete review"
+        cancelText="Cancel"
+        onConfirm={confirmDeleteReview}
+        onCancel={() => {
+          if (!adminBusy) setReviewPendingDelete(null)
         }}
       />
       <ConfirmPopup
@@ -2035,17 +2284,17 @@ export default function AdminDashboardPage() {
         cancelText="Cancel"
         onConfirm={confirmDeleteUser}
         onCancel={() => {
-          if (!adminDeleteLoading) setUserPendingDelete(null)
+          if (!adminBusy) setUserPendingDelete(null)
         }}
       />
-      {adminDeleteLoading && (
+      {adminBusy && (
         <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/50" aria-hidden />
           <div
             role="alertdialog"
             aria-live="polite"
             aria-busy="true"
-            aria-label="Deleting, please wait"
+            aria-label="Please wait"
             className="relative z-[201] flex w-full max-w-sm flex-col items-center gap-4 rounded-xl bg-white px-8 py-10 shadow-2xl"
           >
             <div
@@ -2054,7 +2303,7 @@ export default function AdminDashboardPage() {
             />
             <div className="text-center">
               <p className="text-base font-semibold text-slate-900">Please wait</p>
-              <p className="mt-1 text-sm text-slate-600">Deleting…</p>
+              <p className="mt-1 text-sm text-slate-600">{adminBusy.caption}</p>
             </div>
           </div>
         </div>

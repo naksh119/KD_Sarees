@@ -1,4 +1,5 @@
 import Order from '../models/Order.js';
+import Payment from '../models/Payment.js';
 import Cart from '../models/Cart.js';
 import Product from '../models/Product.js';
 import { asyncHandler } from '../middlewares/asyncHandler.js';
@@ -61,7 +62,26 @@ export const getAllOrders = asyncHandler(async (_req, res) => {
     .populate('user', 'name email')
     .populate('items.product', 'name price')
     .sort({ createdAt: -1 });
-  res.json(orders);
+  const orderIds = orders.map((o) => o._id);
+  const payments = await Payment.find({ order: { $in: orderIds } })
+    .select('order status method amount')
+    .sort({ createdAt: -1 });
+  const latestByOrder = new Map();
+  for (const p of payments) {
+    const key = String(p.order);
+    if (!latestByOrder.has(key)) {
+      latestByOrder.set(key, p);
+    }
+  }
+  const payload = orders.map((o) => {
+    const doc = o.toObject();
+    const pay = latestByOrder.get(String(o._id));
+    doc.latestPayment = pay
+      ? { _id: pay._id, status: pay.status, method: pay.method, amount: pay.amount }
+      : null;
+    return doc;
+  });
+  res.json(payload);
 });
 
 export const updateOrderStatus = asyncHandler(async (req, res) => {
