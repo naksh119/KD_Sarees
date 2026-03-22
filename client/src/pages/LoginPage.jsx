@@ -208,7 +208,7 @@ export default function LoginPage({ isPopup = false, onClose }) {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full rounded-lg bg-black px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-gray-900 disabled:cursor-not-allowed disabled:opacity-70"
+                className="w-full rounded-lg bg-[#c4a77d] px-4 py-2.5 text-sm font-medium text-[#2c1810] transition-colors hover:bg-[#b8956a] focus:outline-none focus:ring-2 focus:ring-[#c4a77d]/40 disabled:cursor-not-allowed disabled:opacity-70"
               >
                 {loading ? 'Signing in...' : 'Submit'}
               </button>

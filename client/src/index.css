@@ -61,3 +61,16 @@ body {
     background-position-x: -220%;
   }
 }
+
+/* Theme primary — explicit hex; !important beats Tailwind preflight + any cached bg-[#191970] */
+button.kd-btn-theme-primary {
+  background-color: #c4a77d !important;
+  color: #2c1810 !important;
+}
+button.kd-btn-theme-primary:hover {
+  background-color: #b8956a !important;
+}
+button.kd-btn-theme-primary:focus-visible {
+  outline: 2px solid transparent;
+  box-shadow: 0 0 0 2px #fff, 0 0 0 4px rgba(196, 167, 125, 0.45);
+}

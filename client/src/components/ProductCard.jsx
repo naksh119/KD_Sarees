@@ -85,8 +85,8 @@ export default function ProductCard({
           }}
           className={`flex h-8 w-8 items-center justify-center rounded-full border-2 shadow transition-colors ${
             isFavorite
-              ? 'border-rose-500 bg-rose-50 text-rose-600'
-              : 'border-blue-500 bg-white text-blue-500 hover:bg-blue-50'
+              ? 'border-red-600 bg-red-50 text-red-600'
+              : 'border-red-400 bg-white text-red-600 hover:bg-red-50'
           }`}
           aria-label={isFavorite ? 'Remove from favorites' : 'Add to favorites'}
         >

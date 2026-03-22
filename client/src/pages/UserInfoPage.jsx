@@ -204,7 +204,7 @@ export default function UserInfoPage() {
                     onClick={() => setActiveSection('profile')}
                     className={`w-full flex items-center gap-3 rounded-lg px-4 py-3 text-sm font-medium border transition ${
                       activeSection === 'profile'
-                        ? 'bg-blue-50 border-blue-200 text-blue-700'
+                        ? 'bg-[#faf6f0] border-[#c4a77d] text-[#2c1810]'
                         : 'bg-gray-50 border-gray-200 text-gray-700 hover:bg-gray-100'
                     }`}
                   >
@@ -217,7 +217,7 @@ export default function UserInfoPage() {
                     onClick={() => setActiveSection('addresses')}
                     className={`w-full flex items-center gap-3 rounded-lg px-4 py-3 text-sm font-medium border transition ${
                       activeSection === 'addresses'
-                        ? 'bg-blue-50 border-blue-200 text-blue-700'
+                        ? 'bg-[#faf6f0] border-[#c4a77d] text-[#2c1810]'
                         : 'bg-gray-50 border-gray-200 text-gray-700 hover:bg-gray-100'
                     }`}
                   >
@@ -230,7 +230,7 @@ export default function UserInfoPage() {
                     onClick={() => setActiveSection('orders')}
                     className={`w-full flex items-center gap-3 rounded-lg px-4 py-3 text-sm font-medium border transition ${
                       activeSection === 'orders'
-                        ? 'bg-blue-50 border-blue-200 text-blue-700'
+                        ? 'bg-[#faf6f0] border-[#c4a77d] text-[#2c1810]'
                         : 'bg-gray-50 border-gray-200 text-gray-700 hover:bg-gray-100'
                     }`}
                   >
@@ -243,18 +243,18 @@ export default function UserInfoPage() {
                     onClick={() => setActiveSection('favorites')}
                     className={`w-full flex items-center gap-3 rounded-lg px-4 py-3 text-sm font-medium border transition ${
                       activeSection === 'favorites'
-                        ? 'bg-blue-50 border-blue-200 text-blue-700'
+                        ? 'bg-[#faf6f0] border-[#c4a77d] text-[#2c1810]'
                         : 'bg-gray-50 border-gray-200 text-gray-700 hover:bg-gray-100'
                     }`}
                   >
-                    <FaHeart />
+                    <FaHeart className="text-red-600 shrink-0" />
                     Favorites
                   </button>
 
                   <button
                     type="button"
                     onClick={() => setShowLogoutConfirm(true)}
-                    className="w-full flex items-center gap-3 rounded-lg px-4 py-3 text-sm font-medium border border-gray-200 bg-gray-50 text-gray-700 hover:bg-gray-100 transition"
+                    className="w-full flex items-center gap-3 rounded-lg border border-[#c4a77d] bg-[#c4a77d] px-4 py-3 text-sm font-medium text-[#2c1810] transition-colors hover:bg-[#b8956a] focus:outline-none focus:ring-2 focus:ring-[#c4a77d]/40"
                   >
                     <FaSignOutAlt />
                     Logout
@@ -262,16 +262,16 @@ export default function UserInfoPage() {
                 </div>
               </aside>
 
-              <div className="min-w-0 flex-1 rounded-lg border border-gray-200 bg-white px-4 py-5 sm:px-6 sm:py-6">
+              <div className="min-w-0 flex-1 overflow-hidden rounded-lg border border-gray-200 bg-white">
                 {activeSection === 'orders' && (
-                  <div className="h-full min-h-[420px] flex flex-col">
-                    <h2 className="inline-block w-fit border-b border-gray-300 pb-2 text-lg font-medium text-gray-800">
-                      My Orders
-                    </h2>
+                  <div className="flex h-full min-h-[420px] flex-col">
+                    <div className="border-b border-[#b8956a]/45 bg-[#c4a77d] px-4 py-3 sm:px-6 sm:py-3.5">
+                      <h2 className="text-lg font-semibold text-[#2c1810]">My Orders</h2>
+                    </div>
 
                     {orders.length === 0 ? (
-                      <div className="flex-1 flex flex-col items-center justify-center text-center px-4">
-                        <div className="mb-4 rounded-full border border-blue-100 bg-blue-50 p-4 text-blue-300">
+                      <div className="flex flex-1 flex-col items-center justify-center px-4 py-8 text-center sm:py-10">
+                        <div className="mb-4 rounded-full border border-[#c4a77d]/35 bg-[#faf6f0] p-4 text-[#c4a77d]">
                           <FaBoxOpen className="text-4xl" />
                         </div>
                         <p className="text-gray-800">You haven&apos;t placed any orders yet.</p>
@@ -279,13 +279,13 @@ export default function UserInfoPage() {
                         <p className="mt-6 text-base font-semibold text-gray-800">Take a look at our products here</p>
                         <Link
                           to="/"
-                          className="mt-6 inline-flex items-center rounded-sm bg-[#00388f] px-6 py-2.5 text-sm font-medium text-white hover:bg-[#022d71]"
+                          className="mt-6 inline-flex items-center rounded-lg bg-[#c4a77d] px-6 py-2.5 text-sm font-medium text-[#2c1810] transition-colors hover:bg-[#b8956a] focus:outline-none focus:ring-2 focus:ring-[#c4a77d]/40"
                         >
                           view products
                         </Link>
                       </div>
                     ) : (
-                      <div className="mt-4 grid grid-cols-1 gap-3">
+                      <div className="grid flex-1 grid-cols-1 gap-3 px-4 py-5 sm:px-6 sm:py-6">
                         {orders.map((order) => (
                           <article key={order._id} className="rounded-lg border border-gray-200 p-3">
                             <p className="text-sm font-medium">Order #{String(order._id).slice(-8).toUpperCase()}</p>
@@ -300,16 +300,16 @@ export default function UserInfoPage() {
                 )}
 
                 {activeSection === 'favorites' && (
-                  <div className="h-full min-h-[420px]">
-                    <h2 className="inline-block w-fit border-b border-gray-300 pb-2 text-lg font-medium text-gray-800">
-                      Favorites
-                    </h2>
+                  <div className="flex min-h-[420px] flex-col">
+                    <div className="border-b border-[#b8956a]/45 bg-[#c4a77d] px-4 py-3 sm:px-6 sm:py-3.5">
+                      <h2 className="text-lg font-semibold text-[#2c1810]">Favorites</h2>
+                    </div>
                     {favorites.length === 0 ? (
-                      <div className="mt-8 rounded-lg border border-gray-200 bg-gray-50 p-5 text-sm text-gray-700">
+                      <div className="mx-4 mt-6 rounded-lg border border-gray-200 bg-gray-50 p-5 text-sm text-gray-700 sm:mx-6">
                         No favorites yet. Tap the heart on any product card to save it here.
                       </div>
                     ) : (
-                      <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                      <div className="grid grid-cols-1 gap-4 px-4 py-5 sm:grid-cols-2 sm:px-6 sm:py-6 lg:grid-cols-3">
                         {favorites.map((product) => (
                           <ProductCard
                             key={product.id}
@@ -338,11 +338,11 @@ export default function UserInfoPage() {
                 )}
 
                 {activeSection === 'addresses' && (
-                  <div className="h-full min-h-[420px]">
-                    <h2 className="inline-block w-fit border-b border-gray-300 pb-2 text-lg font-medium text-gray-800">
-                      My Addresses
-                    </h2>
-                    <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="flex min-h-[420px] flex-col">
+                    <div className="border-b border-[#b8956a]/45 bg-[#c4a77d] px-4 py-3 sm:px-6 sm:py-3.5">
+                      <h2 className="text-lg font-semibold text-[#2c1810]">My Addresses</h2>
+                    </div>
+                    <div className="grid grid-cols-1 gap-4 px-4 py-5 sm:grid-cols-2 sm:px-6 sm:py-6">
                       <div>
                         <label htmlFor="addressLine1" className="block text-sm font-medium text-gray-700 mb-1">
                           Address Line 1
@@ -426,15 +426,15 @@ export default function UserInfoPage() {
                 )}
 
                 {activeSection === 'profile' && (
-                  <div className="h-full min-h-[420px]">
-                    <h2 className="inline-block w-fit border-b border-gray-300 pb-2 text-lg font-medium text-gray-800">
-                      My Profile
-                    </h2>
+                  <div className="flex min-h-[420px] flex-col">
+                    <div className="border-b border-[#b8956a]/45 bg-[#c4a77d] px-4 py-3 sm:px-6 sm:py-3.5">
+                      <h2 className="text-lg font-semibold text-[#2c1810]">My Profile</h2>
+                    </div>
 
                     {loading ? (
-                      <p className="mt-6 text-sm text-gray-600">Loading profile...</p>
+                      <p className="px-4 py-6 text-sm text-gray-600 sm:px-6">Loading profile...</p>
                     ) : (
-                      <form onSubmit={handleSave} className="mt-6 space-y-4">
+                      <form onSubmit={handleSave} className="space-y-4 px-4 py-5 sm:px-6 sm:py-6">
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                           <div>
                             <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
@@ -517,7 +517,7 @@ export default function UserInfoPage() {
                         <button
                           type="submit"
                           disabled={saving}
-                          className="rounded-lg bg-gray-900 text-white px-6 py-2.5 text-sm font-medium hover:bg-black transition disabled:opacity-70 disabled:cursor-not-allowed"
+                          className="rounded-lg bg-[#c4a77d] px-6 py-2.5 text-sm font-medium text-[#2c1810] transition-colors hover:bg-[#b8956a] focus:outline-none focus:ring-2 focus:ring-[#c4a77d]/40 disabled:cursor-not-allowed disabled:opacity-70"
                         >
                           {saving ? 'Saving...' : 'Save Profile'}
                         </button>
@@ -542,7 +542,6 @@ export default function UserInfoPage() {
         cancelText="Cancel"
         onConfirm={() => handleDeleteFavorite(deleteFavoriteTarget)}
         onCancel={() => setDeleteFavoriteTarget(null)}
-        isDanger
       />
       <ConfirmPopup
         isOpen={showLogoutConfirm}
@@ -552,7 +551,6 @@ export default function UserInfoPage() {
         cancelText="Cancel"
         onConfirm={handleLogout}
         onCancel={() => setShowLogoutConfirm(false)}
-        isDanger
       />
     </>
   )

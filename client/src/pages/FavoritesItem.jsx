@@ -81,7 +81,6 @@ function FavoritesItem() {
         cancelText="Cancel"
         onConfirm={() => handleDeleteFavorite(deleteTarget)}
         onCancel={() => setDeleteTarget(null)}
-        isDanger
       />
       <Footer />
     </>

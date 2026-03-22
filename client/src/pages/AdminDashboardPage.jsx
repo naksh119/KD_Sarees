@@ -1023,7 +1023,17 @@ export default function AdminDashboardPage() {
                               {u.role === 'admin' ? 'Admin' : 'User'}
                             </span>
                           </td>
-                          <td className="px-3 py-2.5">{u.isEmailVerified ? 'Yes' : 'No'}</td>
+                          <td className="px-3 py-2.5">
+                            <span
+                              className={`inline-flex items-center justify-center rounded-full border px-2.5 py-1 text-xs font-semibold ${
+                                u.isEmailVerified
+                                  ? 'border-emerald-200 bg-emerald-50 text-emerald-800'
+                                  : 'border-red-200 bg-red-50 text-red-700'
+                              }`}
+                            >
+                              {u.isEmailVerified ? 'Yes' : 'No'}
+                            </span>
+                          </td>
                           <td className="px-3 py-2.5 text-slate-600 whitespace-nowrap">
                             {formatUserDate(u.createdAt)}
                           </td>
@@ -1579,7 +1589,6 @@ export default function AdminDashboardPage() {
         cancelText="Cancel"
         onConfirm={confirmDeleteUser}
         onCancel={() => setUserPendingDelete(null)}
-        isDanger
       />
     </main>
   )

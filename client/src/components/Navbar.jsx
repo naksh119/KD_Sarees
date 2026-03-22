@@ -173,8 +173,12 @@ export default function Navbar({ favoritesCount, hasTopTicker = false }) {
             >
               <UserIcon />
             </Link>
-            <Link to="/favorites" className="relative hidden p-1.5 hover:opacity-70 sm:block" aria-label="Favorites">
-              <HeartIcon filled={displayFavoritesCount > 0} />
+            <Link
+              to="/favorites"
+              className="relative hidden p-1.5 text-red-600 hover:opacity-80 sm:block"
+              aria-label="Favorites"
+            >
+              <HeartIcon className="w-5 h-5 text-red-600" filled={displayFavoritesCount > 0} />
               {displayFavoritesCount > 0 && (
                 <span className="absolute -right-1 -top-1 min-w-[1.1rem] rounded-full bg-rose-600 px-1 text-[10px] leading-4 text-white text-center">
                   {displayFavoritesCount > 99 ? '99+' : displayFavoritesCount}
@@ -257,7 +261,7 @@ export default function Navbar({ favoritesCount, hasTopTicker = false }) {
               <button
                 type="button"
                 onClick={handleLogout}
-                className="w-full rounded-md bg-[#191970] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[#15155e] transition"
+                className="kd-btn-theme-primary w-full rounded-md px-4 py-2.5 text-sm font-medium transition-colors"
               >
                 Logout
               </button>

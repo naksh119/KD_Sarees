@@ -357,7 +357,6 @@ export default function CartPage() {
           setDeleteTarget(null)
         }}
         onCancel={() => setDeleteTarget(null)}
-        isDanger
       />
     </>
   )

@@ -6,13 +6,8 @@ export default function ConfirmPopup({
   cancelText = 'Cancel',
   onConfirm,
   onCancel,
-  isDanger = false,
 }) {
   if (!isOpen) return null
-
-  const confirmButtonClass = isDanger
-    ? 'bg-red-600 hover:bg-red-700 focus:ring-red-300'
-    : 'bg-gray-900 hover:bg-black focus:ring-gray-300'
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
@@ -43,7 +38,7 @@ export default function ConfirmPopup({
           <button
             type="button"
             onClick={onConfirm}
-            className={`rounded-lg px-4 py-2 text-sm font-medium text-white focus:outline-none focus:ring-2 ${confirmButtonClass}`}
+            className="rounded-lg bg-[#c4a77d] px-4 py-2 text-sm font-medium text-[#2c1810] transition-colors hover:bg-[#b8956a] focus:outline-none focus:ring-2 focus:ring-[#c4a77d]/40"
           >
             {confirmText}
           </button>
