@@ -20,8 +20,8 @@ function FavoritesItem() {
     return () => window.removeEventListener('favorites:changed', syncFavorites)
   }, [])
 
-  const handleToggleFavorite = (product) => {
-    const nextFavorites = toggleFavorite(product)
+  const handleToggleFavorite = async (product) => {
+    const nextFavorites = await toggleFavorite(product)
     setFavorites(nextFavorites)
   }
 

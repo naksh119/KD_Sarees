@@ -60,6 +60,11 @@ export default function UserInfoPage() {
     return () => window.removeEventListener('favorites:changed', syncFavorites)
   }, [])
 
+  const handleToggleFavorite = async (product) => {
+    const nextFavorites = await toggleFavorite(product)
+    setFavorites(nextFavorites)
+  }
+
   useEffect(() => {
     const fetchProfile = async () => {
       if (!token) {
@@ -336,7 +341,7 @@ export default function UserInfoPage() {
                             isSale={product.isSale}
                             showAddToCartButton={product.showAddToCartButton}
                             href={product.href}
-                            onToggleFavorite={() => setFavorites(toggleFavorite(product))}
+                            onToggleFavorite={() => handleToggleFavorite(product)}
                             isFavorite
                             showDeleteIcon
                             onDelete={() => setDeleteFavoriteTarget(product)}
