@@ -49,14 +49,14 @@ export default function CategoryCard({
               opacity: inView ? 1 : 0,
               backgroundColor: inView ? '#0f172a' : 'transparent',
               marginTop: inView ? 8 : 0,
-              minHeight: inView ? 52 : 0,
-              maxHeight: inView ? 100 : 0,
+              minHeight: inView ? 72 : 0,
+              maxHeight: inView ? 120 : 0,
               paddingTop: inView ? 8 : 0,
               paddingBottom: inView ? 8 : 0,
               transition: `opacity 0.5s ease-out ${animationDelay + 150}ms, background-color 0.5s ease-out ${animationDelay + 150}ms, margin-top 0.4s ease-out ${animationDelay + 200}ms, min-height 0.4s ease-out ${animationDelay + 200}ms, max-height 0.4s ease-out ${animationDelay + 200}ms, padding 0.4s ease-out ${animationDelay + 200}ms`
             }}
           >
-            <span className="text-sm font-bold uppercase tracking-wider text-white sm:text-base whitespace-nowrap">
+            <span className="text-xs font-bold uppercase tracking-wider text-white sm:text-sm text-center leading-snug px-0.5 [overflow-wrap:anywhere]">
               {categoryName}
             </span>
           </div>

@@ -9,9 +9,9 @@ import sareeImage from '../assets/images/saree.webp';
 
 const DEFAULT_CATEGORIES = [
   { imageSrc: sareeImage, imageAlt: 'Banarasi saree', categoryName: 'BANARASI', href: '#' },
-  { imageSrc: sareeImage, imageAlt: 'Rajathani saree', categoryName: 'RAJATHANI', href: '#' },
-  { imageSrc: sareeImage, imageAlt: 'Silk saree', categoryName: 'SILK', href: '#' },
-  { imageSrc: sareeImage, imageAlt: 'Cotton saree', categoryName: 'COTTON', href: '#' },
+  { imageSrc: sareeImage, imageAlt: 'Pethni saree', categoryName: 'PETHNI', href: '#' },
+  { imageSrc: sareeImage, imageAlt: 'Silk ready made blouse', categoryName: 'silk- Ready made Blouse', href: '#' },
+  { imageSrc: sareeImage, imageAlt: 'Cotton handwork', categoryName: 'cotton-handwork', href: '#' },
 ];
 
 export default function TopCategories({ categories = DEFAULT_CATEGORIES }) {
