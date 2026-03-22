@@ -13,6 +13,11 @@ import AdminLoginPage from './pages/AdminLoginPage'
 import AdminDashboardPage from './pages/AdminDashboardPage'
 import CartPage from './pages/CartPage'
 import FavoritesItem from './pages/FavoritesItem'
+import NewArrivalsPage from './pages/NewArrivalsPage'
+import BestSellersPage from './pages/BestSellersPage'
+import CategoryPage from './pages/CategoryPage'
+import ContactPage from './pages/ContactPage'
+import NoReturnExchangePage from './pages/NoReturnExchangePage'
 
 const isUserLoggedIn = () =>
   Boolean(localStorage.getItem('kd_sarees_token') && localStorage.getItem('kd_sarees_user'))
@@ -43,6 +48,11 @@ function App() {
   const mainRoutes = (
     <>
       <Route path="/" element={<HomePage />} />
+        <Route path="/new-arrivals" element={<NewArrivalsPage />} />
+        <Route path="/best-sellers" element={<BestSellersPage />} />
+        <Route path="/category/:slug" element={<CategoryPage />} />
+        <Route path="/contact" element={<ContactPage />} />
+        <Route path="/no-return-exchange" element={<NoReturnExchangePage />} />
         <Route
           path="/auth"
           element={

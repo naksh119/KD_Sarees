@@ -8,12 +8,12 @@ import FooterGetInTouch from './FooterGetInTouch';
 import FooterNewsletter from './FooterNewsletter';
 import FooterBottomBar from './FooterBottomBar';
 import ChatWidget from './ChatWidget';
-import { categoryNavLinks, informationLinks } from '../../siteLinks';
+import { categoryNavLinks, informationLinks, PATHS } from '../../siteLinks';
 
 const SHOP_QUICK_LINKS = [
-  { label: 'Home', href: '/' },
-  { label: 'New Arrivals', href: '/#new-arrivals' },
-  { label: 'Best Sellers', href: '/#best-sellers' },
+  { label: 'Home', href: PATHS.home },
+  { label: 'New Arrivals', href: PATHS.newArrivals },
+  { label: 'Best Sellers', href: PATHS.bestSellers },
 ];
 
 export default function Footer() {

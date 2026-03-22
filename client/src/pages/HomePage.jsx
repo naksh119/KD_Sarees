@@ -15,6 +15,7 @@ import CartSuccessPopup from '../components/CartSuccessPopup'
 import Footer from '../components/footer/Footer'
 import OfferTicker from '../components/OfferTicker'
 import { api } from '../utils/api'
+import { mapApiProducts } from '../utils/mapProduct'
 import { getFavorites, isFavoriteProduct, toggleFavorite } from '../utils/favorites'
 
 function HomePage() {
@@ -33,21 +34,7 @@ function HomePage() {
         const [productsResult, reviewsResult] = await Promise.allSettled([api.getProducts(), api.getReviews()])
         const productsData = productsResult.status === 'fulfilled' ? productsResult.value : []
         const reviewsData = reviewsResult.status === 'fulfilled' ? reviewsResult.value : []
-        const mappedProducts = (productsData || []).map((p) => ({
-          id: p._id,
-          imageSrc: p.images?.[0] || '',
-          imageSrcHover: p.images?.[1] || p.images?.[0] || '',
-          imageAlt: p.name,
-          productTitle: p.name,
-          originalPrice: Math.round((p.price || 0) * 1.25),
-          currentPrice: p.price || 0,
-          discountPercentage: 20,
-          rating: 4.5,
-          reviewCount: 0,
-          isSale: true,
-          showAddToCartButton: true,
-          href: '#',
-        }))
+        const mappedProducts = mapApiProducts(productsData || [])
         const mappedReviews = (reviewsData || []).map((r) => ({
           id: r._id,
           imageSrc: r.imageSrc || '',

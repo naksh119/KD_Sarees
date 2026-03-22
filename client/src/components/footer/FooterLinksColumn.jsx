@@ -3,6 +3,17 @@
  * Used for Popular Searches, Information, Customer Care.
  */
 
+import { Link } from 'react-router-dom';
+
+function isInternalHref(href, external) {
+  return (
+    !external &&
+    typeof href === 'string' &&
+    href.startsWith('/') &&
+    !href.startsWith('//')
+  );
+}
+
 export default function FooterLinksColumn({ title, links }) {
   return (
     <div className="flex flex-col">
@@ -12,15 +23,24 @@ export default function FooterLinksColumn({ title, links }) {
       <ul className="mt-4 space-y-2">
         {links.map((item) => (
           <li key={item.label}>
-            <a
-              href={item.href}
-              className="text-sm text-white/75 hover:text-white transition-colors"
-              {...(item.external
-                ? { target: '_blank', rel: 'noopener noreferrer' }
-                : {})}
-            >
-              {item.label}
-            </a>
+            {isInternalHref(item.href, item.external) ? (
+              <Link
+                to={item.href}
+                className="text-sm text-white/75 hover:text-white transition-colors"
+              >
+                {item.label}
+              </Link>
+            ) : (
+              <a
+                href={item.href}
+                className="text-sm text-white/75 hover:text-white transition-colors"
+                {...(item.external
+                  ? { target: '_blank', rel: 'noopener noreferrer' }
+                  : {})}
+              >
+                {item.label}
+              </a>
+            )}
           </li>
         ))}
       </ul>

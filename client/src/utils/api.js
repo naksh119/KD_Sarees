@@ -78,7 +78,12 @@ const request = async (path, { method = 'GET', body, auth = 'none', _retry = fal
 }
 
 export const api = {
-  getProducts: () => request('/api/products'),
+  getProducts: (params = {}) => {
+    const q = new URLSearchParams()
+    if (params.category) q.set('category', params.category)
+    const qs = q.toString()
+    return request(`/api/products${qs ? `?${qs}` : ''}`)
+  },
   createProduct: (payload) => request('/api/products', { method: 'POST', body: payload, auth: 'admin' }),
   updateProduct: (id, payload) => request(`/api/products/${id}`, { method: 'PUT', body: payload, auth: 'admin' }),
   deleteProduct: (id) => request(`/api/products/${id}`, { method: 'DELETE', auth: 'admin' }),

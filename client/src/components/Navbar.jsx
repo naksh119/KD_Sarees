@@ -172,11 +172,17 @@ export default function Navbar({ favoritesCount, hasTopTicker = false }) {
               )}
             </div>
             <div className="flex flex-wrap items-center justify-center gap-x-4 xl:gap-x-6 gap-y-1 text-xs xl:text-sm uppercase tracking-wide text-gray-800">
-              {categoryNavLinks.map(({ label, href }) => (
-                <a key={label} href={href} className="hover:text-gray-600 whitespace-nowrap">
-                  {label}
-                </a>
-              ))}
+              {categoryNavLinks.map((item) =>
+                item.router ? (
+                  <Link key={item.label} to={item.to} className="hover:text-gray-600 whitespace-nowrap">
+                    {item.label}
+                  </Link>
+                ) : (
+                  <a key={item.label} href={item.href} className="hover:text-gray-600 whitespace-nowrap">
+                    {item.label}
+                  </a>
+                ),
+              )}
             </div>
           </div>
 
@@ -301,23 +307,41 @@ export default function Navbar({ favoritesCount, hasTopTicker = false }) {
                   ),
                 )}
                 <p className="text-xs uppercase tracking-wider text-gray-500 px-1 pb-2 pt-4">Categories</p>
-                {categoryNavLinks.map(({ label, href }) => (
-                  <a key={label} href={href} onClick={closeMobileMenu} className={linkClass(false)}>
-                    {label}
-                  </a>
-                ))}
+                {categoryNavLinks.map((item) =>
+                  item.router ? (
+                    <Link
+                      key={item.label}
+                      to={item.to}
+                      onClick={closeMobileMenu}
+                      className={linkClass(false)}
+                    >
+                      {item.label}
+                    </Link>
+                  ) : (
+                    <a key={item.label} href={item.href} onClick={closeMobileMenu} className={linkClass(false)}>
+                      {item.label}
+                    </a>
+                  ),
+                )}
                 <p className="text-xs uppercase tracking-wider text-gray-500 px-1 pb-2 pt-4">Information</p>
-                {informationLinks.map(({ label, href, external }) => (
-                  <a
-                    key={label}
-                    href={href}
-                    onClick={closeMobileMenu}
-                    className={linkClass(false)}
-                    {...(external ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
-                  >
-                    {label}
-                  </a>
-                ))}
+                {informationLinks.map(({ label, href, external }) =>
+                  external ? (
+                    <a
+                      key={label}
+                      href={href}
+                      onClick={closeMobileMenu}
+                      className={linkClass(false)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      {label}
+                    </a>
+                  ) : (
+                    <Link key={label} to={href} onClick={closeMobileMenu} className={linkClass(false)}>
+                      {label}
+                    </Link>
+                  ),
+                )}
                 <p className="text-xs uppercase tracking-wider text-gray-500 px-1 pb-2 pt-4">Contact</p>
                 <a
                   href={`mailto:${SITE_EMAIL}`}

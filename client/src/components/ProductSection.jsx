@@ -13,24 +13,35 @@ export default function ProductSection({
   addingToCartProductId,
   onToggleFavorite,
   isFavorite,
+  title = 'Featured Products',
+  sectionId = 'new-arrivals',
+  headingId = 'product-section-heading',
+  hideViewAll = false,
+  showHeading = true,
 }) {
   const hasProducts = Array.isArray(products) && products.length > 0;
+  const sectionProps =
+    showHeading && title
+      ? { 'aria-labelledby': headingId }
+      : { 'aria-label': 'Products' };
 
   return (
     <section
-      id="new-arrivals"
+      {...(sectionId ? { id: sectionId } : {})}
       className="w-full py-12 md:py-16 scroll-mt-28"
-      aria-labelledby="product-section-heading"
+      {...sectionProps}
     >
       <div className="mx-auto max-w-[1400px] px-4 sm:px-6 lg:px-8">
-        <h2
-          id="product-section-heading"
-          className="text-center text-2xl font-bold uppercase tracking-wider text-slate-800 md:text-3xl"
-        >
-          Featured Products
-        </h2>
+        {showHeading && title ? (
+          <h2
+            id={headingId}
+            className="text-center text-2xl font-bold uppercase tracking-wider text-slate-800 md:text-3xl"
+          >
+            {title}
+          </h2>
+        ) : null}
         <div
-          className="mt-8 flex gap-4 overflow-x-auto overflow-y-hidden pb-2 snap-x snap-mandatory hide-scrollbar sm:grid sm:grid-cols-2 sm:gap-6 sm:overflow-visible lg:grid-cols-4 lg:gap-8"
+          className={`${showHeading && title ? 'mt-8' : 'mt-0'} flex gap-4 overflow-x-auto overflow-y-hidden pb-2 snap-x snap-mandatory hide-scrollbar sm:grid sm:grid-cols-2 sm:gap-6 sm:overflow-visible lg:grid-cols-4 lg:gap-8`}
           style={{ WebkitOverflowScrolling: 'touch' }}
         >
           {isLoading &&
@@ -48,6 +59,12 @@ export default function ProductSection({
                 </div>
               </div>
             ))}
+
+          {!isLoading && !hasProducts && (
+            <p className="col-span-full py-12 text-center text-sm text-slate-600 sm:col-span-2 lg:col-span-4">
+              No products to show yet.
+            </p>
+          )}
 
           {!isLoading &&
             hasProducts &&
@@ -76,7 +93,7 @@ export default function ProductSection({
             ))}
         </div>
 
-        {!isLoading && hasProducts && viewAllHref && (
+        {!isLoading && hasProducts && viewAllHref && !hideViewAll && (
           <div className="mt-10 flex justify-center">
             <a
               href={viewAllHref}
