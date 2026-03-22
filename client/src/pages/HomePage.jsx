@@ -16,7 +16,7 @@ import Footer from '../components/footer/Footer'
 import OfferTicker from '../components/OfferTicker'
 import { api } from '../utils/api'
 import { mapApiProducts } from '../utils/mapProduct'
-import { getFavorites, isFavoriteProduct, toggleFavorite } from '../utils/favorites'
+import { getFavorites, isFavoriteProduct, syncFavoritesFromServer, toggleFavorite } from '../utils/favorites'
 
 function HomePage() {
   const navigate = useNavigate()
@@ -64,6 +64,7 @@ function HomePage() {
     }
 
     syncFavoritesCount()
+    syncFavoritesFromServer().then(() => setFavoritesCount(getFavorites().length))
     window.addEventListener('favorites:changed', syncFavoritesCount)
     return () => window.removeEventListener('favorites:changed', syncFavoritesCount)
   }, [])

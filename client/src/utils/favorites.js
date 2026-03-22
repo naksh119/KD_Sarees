@@ -1,4 +1,5 @@
 import { api } from './api';
+import { mapFavoriteDocToCards } from './mapProduct';
 
 const FAVORITES_STORAGE_KEY = 'kd_sarees_favorites';
 
@@ -17,27 +18,47 @@ export function saveFavorites(favorites) {
 }
 
 export function isFavoriteProduct(productId) {
+  const idStr = String(productId ?? '');
   const favorites = getFavorites();
-  return favorites.some((item) => item.id === productId);
+  return favorites.some((item) => String(item.id) === idStr);
 }
 
-export function toggleFavorite(product) {
+/** When logged in, replaces local list with server state (fixes drift after parallel toggles). */
+export async function syncFavoritesFromServer() {
+  if (!localStorage.getItem('kd_sarees_token')) return getFavorites();
+  try {
+    const doc = await api.getFavorites();
+    const next = mapFavoriteDocToCards(doc);
+    saveFavorites(next);
+    window.dispatchEvent(new Event('favorites:changed'));
+    return next;
+  } catch {
+    return getFavorites();
+  }
+}
+
+export async function toggleFavorite(product) {
+  const idStr = String(product?.id ?? '');
   const favorites = getFavorites();
-  const exists = favorites.some((item) => item.id === product.id);
+  const exists = favorites.some((item) => String(item.id) === idStr);
   const hasUserToken = Boolean(localStorage.getItem('kd_sarees_token'));
 
-  if (hasUserToken) {
-    const productId = String(product?.id || '');
-    if (productId) {
-      const request = exists ? api.removeFavoriteItem({ productId }) : api.addToFavorites({ productId });
-      request.catch(() => {
-        // Local storage remains the source of truth when API fails.
-      });
+  if (hasUserToken && idStr) {
+    try {
+      const doc = exists
+        ? await api.removeFavoriteItem({ productId: idStr })
+        : await api.addToFavorites({ productId: idStr });
+      const next = mapFavoriteDocToCards(doc);
+      saveFavorites(next);
+      window.dispatchEvent(new Event('favorites:changed'));
+      return next;
+    } catch {
+      // Fall back to local-only toggle if the API is unavailable.
     }
   }
 
   const nextFavorites = exists
-    ? favorites.filter((item) => item.id !== product.id)
+    ? favorites.filter((item) => String(item.id) !== idStr)
     : [product, ...favorites];
 
   saveFavorites(nextFavorites);
@@ -52,7 +73,11 @@ export async function removeFavoriteById(productId) {
   const hasUserToken = Boolean(localStorage.getItem('kd_sarees_token'));
   if (hasUserToken) {
     try {
-      await api.removeFavoriteItem({ productId: normalizedProductId });
+      const doc = await api.removeFavoriteItem({ productId: normalizedProductId });
+      const next = mapFavoriteDocToCards(doc);
+      saveFavorites(next);
+      window.dispatchEvent(new Event('favorites:changed'));
+      return next;
     } catch {
       // Keep local removal as fallback when server data is unavailable.
     }

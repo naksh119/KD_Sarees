@@ -20,19 +20,23 @@ export const addToFavorites = asyncHandler(async (req, res) => {
   const product = await Product.findById(productId);
   if (!product) throw new ApiError(404, 'Product not found');
 
+  // Atomic $addToSet avoids lost updates when multiple hearts are clicked in parallel.
+  await Favorite.findOneAndUpdate(
+    { user: req.user._id },
+    { $addToSet: { items: productId } },
+    { upsert: true, new: true, setDefaultsOnInsert: true }
+  );
+
   const favorites = await getOrCreateFavorites(req.user._id);
-  const hasItem = favorites.items.some((item) => String(item) === String(productId));
-  if (!hasItem) favorites.items.push(productId);
-  await favorites.save();
   await favorites.populate('items', 'name price images stock');
   res.json(favorites);
 });
 
 export const removeFavoriteItem = asyncHandler(async (req, res) => {
   const { productId } = req.body;
+  await Favorite.findOneAndUpdate({ user: req.user._id }, { $pull: { items: productId } }, { new: true });
+
   const favorites = await getOrCreateFavorites(req.user._id);
-  favorites.items = favorites.items.filter((item) => String(item) !== String(productId));
-  await favorites.save();
   await favorites.populate('items', 'name price images stock');
   res.json(favorites);
 });

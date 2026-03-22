@@ -89,8 +89,8 @@ export function useStorefrontCatalog({
     }
   }
 
-  const handleToggleFavorite = useCallback((product) => {
-    toggleFavorite(product)
+  const handleToggleFavorite = useCallback(async (product) => {
+    await toggleFavorite(product)
     setFavoritesCount(getFavorites().length)
   }, [])
 

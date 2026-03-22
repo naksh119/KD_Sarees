@@ -820,8 +820,9 @@ export default function AdminDashboardPage() {
     const totalStock = totalProducts
     const totalValue = products.reduce((sum, product) => sum + product.price, 0)
     const lowStockCount = products.filter((product) => product.stock < 10).length
-    return { totalProducts, totalStock, totalValue, lowStockCount }
-  }, [products])
+    const totalCategories = Array.isArray(categories) ? categories.length : 0
+    return { totalProducts, totalStock, totalValue, lowStockCount, totalCategories }
+  }, [products, categories])
 
   const analyticsData = useMemo(() => {
     const categoryMap = products.reduce((acc, product) => {
@@ -1152,7 +1153,11 @@ export default function AdminDashboardPage() {
           )}
 
           {(activeSection === 'overview' || activeSection === 'products') && (
-            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-4">
+              <article className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+                <p className="text-xs uppercase tracking-wider text-gray-500">Total Category</p>
+                <p className="text-2xl font-semibold text-[#191970] mt-2">{stats.totalCategories}</p>
+              </article>
               <article className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
                 <p className="text-xs uppercase tracking-wider text-gray-500">Total Products</p>
                 <p className="text-2xl font-semibold text-[#191970] mt-2">{stats.totalProducts}</p>

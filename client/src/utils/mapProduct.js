@@ -26,3 +26,9 @@ export function mapApiProducts(list) {
   if (!Array.isArray(list)) return []
   return list.map(mapApiProductToCard).filter(Boolean)
 }
+
+/** GET /api/favorites populated `items` → same card shape as localStorage favorites. */
+export function mapFavoriteDocToCards(doc) {
+  if (!doc?.items?.length) return []
+  return doc.items.map(mapApiProductToCard).filter(Boolean)
+}
