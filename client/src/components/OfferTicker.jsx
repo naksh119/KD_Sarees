@@ -1,4 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
+import { api } from '../utils/api'
+import { OFFERS_INVALIDATE_STORAGE_KEY } from '../utils/offerTickerSync.js'
 
 const formatCountdown = (diffMs) => {
   if (diffMs <= 0) return 'Expired'
@@ -31,20 +33,29 @@ const getCountdownParts = (diffMs) => {
   }
 }
 
+const buildTickerLine = (offer) => {
+  if (!offer) return ''
+  const parts = [offer.title?.trim(), offer.description?.trim()].filter(Boolean)
+  let line = parts.join(' · ')
+  const bits = []
+  if (offer.discountPercent != null && offer.discountPercent !== '') {
+    bits.push(`${offer.discountPercent}% OFF`)
+  }
+  if (offer.code) bits.push(`Code: ${offer.code}`)
+  if (bits.length) {
+    line = line ? `${line} — ${bits.join(' · ')}` : bits.join(' · ')
+  }
+  return line
+}
+
 export default function OfferTicker() {
-  const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'https://kd-sarees.onrender.com'
   const [offers, setOffers] = useState([])
   const [now, setNow] = useState(Date.now())
-  const fixedOfferText = 'Holi Special - Summer Holi 20% OFF Code: 2001'
 
   useEffect(() => {
     const fetchOffers = async () => {
       try {
-        const response = await fetch(`${apiBaseUrl}/api/offers`)
-        const data = await response.json()
-        if (!response.ok) {
-          return
-        }
+        const data = await api.getPublicOffers()
         setOffers(Array.isArray(data) ? data : [])
       } catch {
         setOffers([])
@@ -52,46 +63,75 @@ export default function OfferTicker() {
     }
 
     fetchOffers()
-    const intervalId = window.setInterval(fetchOffers, 20000)
-    return () => window.clearInterval(intervalId)
-  }, [apiBaseUrl])
+    const intervalId = window.setInterval(fetchOffers, 8000)
+    const onInvalidate = () => {
+      fetchOffers()
+    }
+    const onStorage = (event) => {
+      if (event.key === OFFERS_INVALIDATE_STORAGE_KEY) {
+        fetchOffers()
+      }
+    }
+    const onVisibility = () => {
+      if (document.visibilityState === 'visible') {
+        fetchOffers()
+      }
+    }
+    window.addEventListener('kd-offers:invalidate', onInvalidate)
+    window.addEventListener('storage', onStorage)
+    document.addEventListener('visibilitychange', onVisibility)
+    return () => {
+      window.clearInterval(intervalId)
+      window.removeEventListener('kd-offers:invalidate', onInvalidate)
+      window.removeEventListener('storage', onStorage)
+      document.removeEventListener('visibilitychange', onVisibility)
+    }
+  }, [])
 
   useEffect(() => {
     const timerId = window.setInterval(() => setNow(Date.now()), 1000)
     return () => window.clearInterval(timerId)
   }, [])
 
-  const nearestEndingOffer = useMemo(() => {
-    const nowDate = new Date(now)
-    const withValidEndDate = offers
-      .filter((offer) => offer?.endsAt)
-      .map((offer) => ({ offer, endDate: new Date(offer.endsAt) }))
-      .filter((item) => !Number.isNaN(item.endDate.getTime()) && item.endDate > nowDate)
-      .sort((a, b) => a.endDate - b.endDate)
+  // API returns active offers sorted by updatedAt (most recently edited first).
+  const featuredOffer = useMemo(() => {
+    if (!offers.length) return null
+    return offers[0]
+  }, [offers])
 
-    return withValidEndDate[0] || null
-  }, [offers, now])
+  const featuredEnd = useMemo(() => {
+    if (!featuredOffer?.endsAt) return null
+    const endDate = new Date(featuredOffer.endsAt)
+    return Number.isNaN(endDate.getTime()) ? null : endDate
+  }, [featuredOffer])
+
+  const tickerLine = useMemo(() => {
+    const line = buildTickerLine(featuredOffer)
+    if (line) return line
+    return 'Shop exclusive collections — check back for new offers.'
+  }, [featuredOffer])
 
   const rightCornerText = useMemo(() => {
-    if (!nearestEndingOffer) {
+    if (!featuredEnd) {
       return 'No end date'
     }
-    const countdown = formatCountdown(nearestEndingOffer.endDate.getTime() - now)
-    return countdown
-  }, [nearestEndingOffer, now])
+    return formatCountdown(featuredEnd.getTime() - now)
+  }, [featuredEnd, now])
 
   const countdownParts = useMemo(() => {
-    if (!nearestEndingOffer) {
+    if (!featuredEnd) {
       return { isExpired: false, days: '--', hours: '--', minutes: '--', seconds: '--' }
     }
-    return getCountdownParts(nearestEndingOffer.endDate.getTime() - now)
-  }, [nearestEndingOffer, now])
+    return getCountdownParts(featuredEnd.getTime() - now)
+  }, [featuredEnd, now])
 
   return (
     <>
       <div className="fixed inset-x-0 top-0 z-[70] w-full bg-[#0f172a] text-[#f5d76e] overflow-hidden">
         <div className="relative">
-          <div className="py-2 text-xs sm:text-sm tracking-wide text-center font-medium">{fixedOfferText}</div>
+          <div className="py-2 px-3 sm:px-10 md:px-56 text-xs sm:text-sm tracking-wide text-center font-medium leading-snug line-clamp-2 md:line-clamp-1">
+            {tickerLine}
+          </div>
           <div className="hidden md:flex absolute left-0 top-0 h-full items-center bg-gradient-to-r from-[#0f172a] via-[#0f172a] to-transparent pr-8 pl-3">
             <div className="offer-countdown-badge flex w-[240px] items-center justify-center gap-2 rounded-full border border-[#f5d76e]/45 px-3 py-1.5 text-[11px] sm:text-xs font-semibold">
               <span className="offer-countdown-dot" />

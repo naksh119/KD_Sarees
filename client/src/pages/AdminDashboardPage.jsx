@@ -3,6 +3,8 @@ import { Link, useNavigate } from 'react-router-dom'
 import ConfirmPopup from '../components/ConfirmPopup'
 import ReviewSuccessPopup from '../components/ReviewSuccessPopup'
 import { api } from '../utils/api'
+import { getApiBaseUrl } from '../utils/apiBaseUrl.js'
+import { notifyOffersInvalidated } from '../utils/offerTickerSync.js'
 import { parseProductCsv, PRODUCT_CSV_TEMPLATE } from '../utils/parseProductCsv'
 
 const ADMIN_SESSION_KEY = 'kd_sarees_admin_session'
@@ -98,11 +100,14 @@ const toNumber = (value) => {
   return Number.isFinite(parsed) ? parsed : 0
 }
 
+const pad2 = (n) => String(n).padStart(2, '0')
+
+/** datetime-local uses the user's local calendar/time; avoid toISOString() here (that shows UTC). */
 const toInputDateTimeText = (value) => {
   if (!value) return ''
   const parsed = new Date(value)
   if (Number.isNaN(parsed.getTime())) return ''
-  return parsed.toISOString().slice(0, 16)
+  return `${parsed.getFullYear()}-${pad2(parsed.getMonth() + 1)}-${pad2(parsed.getDate())}T${pad2(parsed.getHours())}:${pad2(parsed.getMinutes())}`
 }
 
 const formatUserDate = (value) => {
@@ -114,7 +119,7 @@ const formatUserDate = (value) => {
 
 export default function AdminDashboardPage() {
   const navigate = useNavigate()
-  const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'https://kd-sarees.onrender.com'
+  const apiBaseUrl = getApiBaseUrl()
   const [products, setProducts] = useState(defaultProducts)
   const [productsListLoading, setProductsListLoading] = useState(true)
   const [formData, setFormData] = useState(initialForm)
@@ -527,13 +532,24 @@ export default function AdminDashboardPage() {
 
     try {
       setOfferLoading(true)
+      const start = new Date(offerFormData.startsAt.trim())
+      const end = new Date(offerFormData.endsAt.trim())
+      if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) {
+        setOfferError('Invalid start or end date.')
+        return
+      }
+      if (end <= start) {
+        setOfferError('End date and time must be after start.')
+        return
+      }
+
       const payload = {
         title: offerFormData.title.trim(),
         description: offerFormData.description.trim(),
         code: offerFormData.code.trim(),
         discountPercent: offerFormData.discountPercent ? Number(offerFormData.discountPercent) : undefined,
-        startsAt: offerFormData.startsAt.trim(),
-        endsAt: offerFormData.endsAt.trim(),
+        startsAt: start.toISOString(),
+        endsAt: end.toISOString(),
       }
 
       if (editingOfferId) {
@@ -551,6 +567,7 @@ export default function AdminDashboardPage() {
           description: 'Your offer has been published successfully. It will appear in the top UI ticker for customers.',
         })
       }
+      notifyOffersInvalidated()
       resetOfferForm()
     } catch (err) {
       setOfferError(err.message || 'Unable to create offer')
@@ -582,6 +599,7 @@ export default function AdminDashboardPage() {
               description: 'This offer is inactive and will not apply until you activate it again.',
             }
       )
+      notifyOffersInvalidated()
     } catch (err) {
       setOfferError(err.message || 'Unable to update offer')
     } finally {
@@ -606,6 +624,7 @@ export default function AdminDashboardPage() {
       await api.deleteOffer(pending._id)
       setOffers((prev) => prev.filter((item) => item._id !== pending._id))
       setOfferPendingDelete(null)
+      notifyOffersInvalidated()
     } catch (err) {
       setOfferError(err.message || 'Unable to delete offer')
     } finally {
@@ -1043,6 +1062,17 @@ export default function AdminDashboardPage() {
                       </span>
                     </div>
                     <p className="text-xs text-slate-600 mt-1">{offer.description}</p>
+                    {typeof offer.publiclyVisible === 'boolean' && (
+                      <p
+                        className={`text-[10px] font-medium mt-1.5 ${
+                          offer.publiclyVisible ? 'text-emerald-700' : 'text-amber-800'
+                        }`}
+                      >
+                        {offer.publiclyVisible
+                          ? 'Shown on storefront ticker'
+                          : 'Not on storefront — set Active and ensure start ≤ now ≤ end (re-save dates after deploy if needed).'}
+                      </p>
+                    )}
                     <p className="text-xs text-slate-500 mt-2">
                       {offer.discountPercent ? `${offer.discountPercent}% OFF` : 'General offer'}
                       {offer.code ? ` | Code: ${offer.code}` : ''}

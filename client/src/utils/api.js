@@ -1,4 +1,8 @@
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://kd-sarees.onrender.com'
+import { getApiBaseUrl } from './apiBaseUrl.js'
+
+const API_BASE_URL = getApiBaseUrl()
+
+export { getApiBaseUrl }
 
 const getUserToken = () => localStorage.getItem('kd_sarees_token')
 const getAdminToken = () => localStorage.getItem('kd_sarees_admin_token')
@@ -61,6 +65,7 @@ const request = async (path, { method = 'GET', body, auth = 'none', _retry = fal
     method,
     headers,
     body: body ? JSON.stringify(body) : undefined,
+    cache: 'no-store',
   })
   const data = await response.json().catch(() => ({}))
   if (!response.ok) {
@@ -95,6 +100,8 @@ export const api = {
   createCategory: (payload) => request('/api/categories', { method: 'POST', body: payload, auth: 'admin' }),
   updateCategory: (id, payload) => request(`/api/categories/${id}`, { method: 'PUT', body: payload, auth: 'admin' }),
   deleteCategory: (id) => request(`/api/categories/${id}`, { method: 'DELETE', auth: 'admin' }),
+  /** Public list (active + in date window); cache-busted for ticker. */
+  getPublicOffers: () => request(`/api/offers?_=${Date.now()}`),
   getAdminOffers: () => request('/api/offers/all', { auth: 'admin' }),
   createOffer: (payload) => request('/api/offers', { method: 'POST', body: payload, auth: 'admin' }),
   updateOffer: (id, payload) => request(`/api/offers/${id}`, { method: 'PUT', body: payload, auth: 'admin' }),

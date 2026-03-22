@@ -1,5 +1,16 @@
 import Offer from '../models/Offer.js';
 
+/** Same rules as the public GET /api/offers query (for admin visibility hints). */
+const isOfferPublicOnStore = (o, now) => {
+  if (!o?.isActive) return false;
+  const s = o.startsAt ? new Date(o.startsAt) : null;
+  const e = o.endsAt ? new Date(o.endsAt) : null;
+  if (!s || Number.isNaN(s.getTime())) return false;
+  if (s > now) return false;
+  if (e && !Number.isNaN(e.getTime()) && e < now) return false;
+  return true;
+};
+
 const parseDate = (value) => {
   if (!value) return null;
   const parsed = new Date(value);
@@ -9,14 +20,12 @@ const parseDate = (value) => {
 export const getActiveOffers = async (_req, res) => {
   try {
     const now = new Date();
-    const offers = await Offer.find({
-      isActive: true,
-      startsAt: { $lte: now },
-      $or: [{ endsAt: null }, { endsAt: { $exists: false } }, { endsAt: { $gte: now } }],
-    })
-      .sort({ createdAt: -1 })
-      .limit(20);
+    // Load active rows and filter dates in JS so mixed Date/string types in Mongo still match
+    // the same rules as admin `publiclyVisible`.
+    const candidates = await Offer.find({ isActive: true }).sort({ updatedAt: -1 }).limit(50).lean();
+    const offers = candidates.filter((o) => isOfferPublicOnStore(o, now)).slice(0, 20);
 
+    res.set('Cache-Control', 'no-store');
     return res.json(offers);
   } catch (err) {
     return res.status(500).json({ message: err.message || 'Server error' });
@@ -25,8 +34,13 @@ export const getActiveOffers = async (_req, res) => {
 
 export const getAllOffers = async (_req, res) => {
   try {
-    const offers = await Offer.find().sort({ createdAt: -1 }).limit(100);
-    return res.json(offers);
+    const now = new Date();
+    const offers = await Offer.find().sort({ createdAt: -1 }).limit(100).lean();
+    const enriched = offers.map((o) => ({
+      ...o,
+      publiclyVisible: isOfferPublicOnStore(o, now),
+    }));
+    return res.json(enriched);
   } catch (err) {
     return res.status(500).json({ message: err.message || 'Server error' });
   }
