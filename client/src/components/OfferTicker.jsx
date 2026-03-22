@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { api } from '../utils/api'
 import { OFFERS_INVALIDATE_STORAGE_KEY } from '../utils/offerTickerSync.js'
+import { setOfferTickerVisible } from '../utils/offerTickerVisibility.js'
 
 const formatCountdown = (diffMs) => {
   if (diffMs <= 0) return 'Expired'
@@ -88,16 +89,27 @@ export default function OfferTicker() {
     }
   }, [])
 
-  useEffect(() => {
-    const timerId = window.setInterval(() => setNow(Date.now()), 1000)
-    return () => window.clearInterval(timerId)
-  }, [])
-
   // API returns active offers sorted by updatedAt (most recently edited first).
   const featuredOffer = useMemo(() => {
     if (!offers.length) return null
     return offers[0]
   }, [offers])
+
+  const hasDisplayableOffer = useMemo(() => {
+    if (!featuredOffer) return false
+    return Boolean(buildTickerLine(featuredOffer).trim())
+  }, [featuredOffer])
+
+  useEffect(() => {
+    setOfferTickerVisible(hasDisplayableOffer)
+    return () => setOfferTickerVisible(false)
+  }, [hasDisplayableOffer])
+
+  useEffect(() => {
+    if (!hasDisplayableOffer) return undefined
+    const timerId = window.setInterval(() => setNow(Date.now()), 1000)
+    return () => window.clearInterval(timerId)
+  }, [hasDisplayableOffer])
 
   const featuredEnd = useMemo(() => {
     if (!featuredOffer?.endsAt) return null
@@ -106,9 +118,8 @@ export default function OfferTicker() {
   }, [featuredOffer])
 
   const tickerLine = useMemo(() => {
-    const line = buildTickerLine(featuredOffer)
-    if (line) return line
-    return 'Shop exclusive collections — check back for new offers.'
+    if (!featuredOffer) return ''
+    return buildTickerLine(featuredOffer)
   }, [featuredOffer])
 
   const rightCornerText = useMemo(() => {
@@ -124,6 +135,10 @@ export default function OfferTicker() {
     }
     return getCountdownParts(featuredEnd.getTime() - now)
   }, [featuredEnd, now])
+
+  if (!hasDisplayableOffer) {
+    return null
+  }
 
   return (
     <>

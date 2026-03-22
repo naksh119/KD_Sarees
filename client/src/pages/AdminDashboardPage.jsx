@@ -933,57 +933,91 @@ export default function AdminDashboardPage() {
               </div>
             </div>
 
-            <form className="mt-5 grid grid-cols-1 md:grid-cols-3 gap-3" onSubmit={handleOfferSubmit}>
-              <input
-                name="title"
-                type="text"
-                placeholder="Offer title"
-                value={offerFormData.title}
-                onChange={handleOfferChange}
-                className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 placeholder:text-gray-500 focus:border-[#191970] focus:outline-none"
-              />
-              <input
-                name="description"
-                type="text"
-                placeholder="Offer description"
-                value={offerFormData.description}
-                onChange={handleOfferChange}
-                className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 placeholder:text-gray-500 focus:border-[#191970] focus:outline-none"
-              />
-              <input
-                name="code"
-                type="text"
-                placeholder="Coupon code (optional)"
-                value={offerFormData.code}
-                onChange={handleOfferChange}
-                className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 placeholder:text-gray-500 focus:border-[#191970] focus:outline-none"
-              />
-              <input
-                name="discountPercent"
-                type="number"
-                min="0"
-                max="100"
-                placeholder="Discount %"
-                value={offerFormData.discountPercent}
-                onChange={handleOfferChange}
-                className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 placeholder:text-gray-500 focus:border-[#191970] focus:outline-none"
-              />
-              <input
-                name="startsAt"
-                type="datetime-local"
-                placeholder="Start date and time"
-                value={offerFormData.startsAt}
-                onChange={handleOfferChange}
-                className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 focus:border-[#191970] focus:outline-none"
-              />
-              <input
-                name="endsAt"
-                type="datetime-local"
-                placeholder="End date and time"
-                value={offerFormData.endsAt}
-                onChange={handleOfferChange}
-                className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 focus:border-[#191970] focus:outline-none"
-              />
+            <form className="mt-5 grid grid-cols-1 md:grid-cols-3 gap-4" onSubmit={handleOfferSubmit}>
+              <div className="flex flex-col gap-1.5">
+                <label htmlFor="offer-title" className="text-xs font-medium text-slate-700">
+                  Offer title
+                </label>
+                <input
+                  id="offer-title"
+                  name="title"
+                  type="text"
+                  placeholder="e.g. Sale, Festival"
+                  value={offerFormData.title}
+                  onChange={handleOfferChange}
+                  className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 placeholder:text-gray-500 focus:border-[#191970] focus:outline-none"
+                />
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <label htmlFor="offer-description" className="text-xs font-medium text-slate-700">
+                  Description
+                </label>
+                <input
+                  id="offer-description"
+                  name="description"
+                  type="text"
+                  placeholder="Main message shown in ticker"
+                  value={offerFormData.description}
+                  onChange={handleOfferChange}
+                  className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 placeholder:text-gray-500 focus:border-[#191970] focus:outline-none"
+                />
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <label htmlFor="offer-code" className="text-xs font-medium text-slate-700">
+                  Coupon code <span className="font-normal text-slate-500">(optional)</span>
+                </label>
+                <input
+                  id="offer-code"
+                  name="code"
+                  type="text"
+                  placeholder="Leave blank if none"
+                  value={offerFormData.code}
+                  onChange={handleOfferChange}
+                  className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 placeholder:text-gray-500 focus:border-[#191970] focus:outline-none"
+                />
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <label htmlFor="offer-discount" className="text-xs font-medium text-slate-700">
+                  Discount (%)
+                </label>
+                <input
+                  id="offer-discount"
+                  name="discountPercent"
+                  type="number"
+                  min="0"
+                  max="100"
+                  placeholder="0–100"
+                  value={offerFormData.discountPercent}
+                  onChange={handleOfferChange}
+                  className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 placeholder:text-gray-500 focus:border-[#191970] focus:outline-none"
+                />
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <label htmlFor="offer-starts-at" className="text-xs font-medium text-slate-700">
+                  Starts at
+                </label>
+                <input
+                  id="offer-starts-at"
+                  name="startsAt"
+                  type="datetime-local"
+                  value={offerFormData.startsAt}
+                  onChange={handleOfferChange}
+                  className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 focus:border-[#191970] focus:outline-none"
+                />
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <label htmlFor="offer-ends-at" className="text-xs font-medium text-slate-700">
+                  Ends at
+                </label>
+                <input
+                  id="offer-ends-at"
+                  name="endsAt"
+                  type="datetime-local"
+                  value={offerFormData.endsAt}
+                  onChange={handleOfferChange}
+                  className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 focus:border-[#191970] focus:outline-none"
+                />
+              </div>
               <button
                 type="submit"
                 disabled={offerLoading}

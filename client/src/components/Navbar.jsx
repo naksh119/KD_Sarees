@@ -7,6 +7,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { getFavorites } from '../utils/favorites';
+import { subscribeOfferTickerVisible } from '../utils/offerTickerVisibility.js';
 import {
   SITE_EMAIL,
   SITE_PHONE_DISPLAY,
@@ -97,8 +98,15 @@ export default function Navbar({ favoritesCount, hasTopTicker = false }) {
   const location = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [localFavoritesCount, setLocalFavoritesCount] = useState(0);
+  const [tickerVisible, setTickerVisible] = useState(false);
+
+  const reserveTopSpace = Boolean(hasTopTicker && tickerVisible);
 
   const closeMobileMenu = () => setMobileMenuOpen(false);
+
+  useEffect(() => {
+    return subscribeOfferTickerVisible(setTickerVisible);
+  }, []);
 
   useEffect(() => {
     if (!mobileMenuOpen) return undefined;
@@ -140,7 +148,7 @@ export default function Navbar({ favoritesCount, hasTopTicker = false }) {
 
   return (
     <>
-      <header className={`fixed inset-x-0 ${hasTopTicker ? 'top-8' : 'top-0'} z-50 w-full border-b border-gray-100 bg-white`}>
+      <header className={`fixed inset-x-0 ${reserveTopSpace ? 'top-8' : 'top-0'} z-50 w-full border-b border-gray-100 bg-white`}>
         <nav className="w-full max-w-[1400px] mx-auto px-3 sm:px-6 lg:px-8" aria-label="Main navigation">
         {/* Main bar: logo, desktop nav, icons / mobile menu button */}
         <div className="flex items-center justify-between gap-2 sm:gap-4 py-5 sm:py-6 lg:py-7">
@@ -252,7 +260,7 @@ export default function Navbar({ favoritesCount, hasTopTicker = false }) {
 
         {/* Mobile/tablet menu overlay + drawer */}
         <div
-          className={`fixed inset-x-0 bottom-0 ${hasTopTicker ? 'top-8' : 'top-0'} z-[80] lg:hidden ${
+          className={`fixed inset-x-0 bottom-0 ${reserveTopSpace ? 'top-8' : 'top-0'} z-[80] lg:hidden ${
             mobileMenuOpen ? 'visible' : 'invisible'
           }`}
           aria-hidden={!mobileMenuOpen}
