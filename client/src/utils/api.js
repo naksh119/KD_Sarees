@@ -105,4 +105,9 @@ export const api = {
   getMyOrders: () => request('/api/orders/my', { auth: 'user' }),
   createPayment: (orderId, payload) =>
     request(`/api/payments/order/${orderId}`, { method: 'POST', body: payload, auth: 'user' }),
+  listUsers: (role) => {
+    const q = role === 'admin' || role === 'user' ? `?role=${encodeURIComponent(role)}` : ''
+    return request(`/api/users${q}`, { auth: 'admin' })
+  },
+  deleteUser: (id) => request(`/api/users/${id}`, { method: 'DELETE', auth: 'admin' }),
 }

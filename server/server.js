@@ -10,6 +10,7 @@ import reviewRoutes from './routes/reviewRoutes.js';
 import cartRoutes from './routes/cartRoutes.js';
 import paymentRoutes from './routes/paymentRoutes.js';
 import favoriteRoutes from './routes/favoriteRoutes.js';
+import userRoutes from './routes/userRoutes.js';
 import User from './models/User.js';
 import { applySecurityMiddleware } from './middlewares/securityMiddleware.js';
 import { errorHandler, notFound } from './middlewares/errorMiddleware.js';
@@ -37,6 +38,7 @@ app.use('/api/reviews', reviewRoutes);
 app.use('/api/cart', cartRoutes);
 app.use('/api/favorites', favoriteRoutes);
 app.use('/api/payments', paymentRoutes);
+app.use('/api/users', userRoutes);
 app.use(notFound);
 app.use(errorHandler);
 

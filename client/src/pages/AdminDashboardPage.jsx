@@ -41,7 +41,8 @@ const sidebarItems = [
   { key: 'products', label: 'Products' },
   { key: 'reviews', label: 'Reviews' },
   { key: 'orders', label: 'Orders' },
-  { key: 'customers', label: 'Customers' },
+  { key: 'allUsers', label: 'All Users' },
+  { key: 'adminUsers', label: 'Admin Users' },
   { key: 'analytics', label: 'Analytics' },
 ]
 
@@ -101,6 +102,13 @@ const toInputDateTimeText = (value) => {
   return parsed.toISOString().slice(0, 16)
 }
 
+const formatUserDate = (value) => {
+  if (!value) return '—'
+  const parsed = new Date(value)
+  if (Number.isNaN(parsed.getTime())) return '—'
+  return parsed.toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' })
+}
+
 export default function AdminDashboardPage() {
   const navigate = useNavigate()
   const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'https://kd-sarees.onrender.com'
@@ -125,6 +133,10 @@ export default function AdminDashboardPage() {
   const [categorySuccessMessage, setCategorySuccessMessage] = useState('')
   const [previewImageUrl, setPreviewImageUrl] = useState('')
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false)
+  const [usersList, setUsersList] = useState([])
+  const [usersLoading, setUsersLoading] = useState(false)
+  const [usersError, setUsersError] = useState('')
+  const [usersSuccessMessage, setUsersSuccessMessage] = useState('')
   const categoryOptions = useMemo(() => normalizeCategoryList(categories), [categories])
   const selectCategoryOptions = useMemo(() => {
     const byName = new Map(categoryOptions.map((category) => [category.name.trim().toLowerCase(), category]))
@@ -170,6 +182,37 @@ export default function AdminDashboardPage() {
 
     loadAdminData()
   }, [apiBaseUrl])
+
+  useEffect(() => {
+    if (activeSection !== 'allUsers' && activeSection !== 'adminUsers') {
+      return undefined
+    }
+    let cancelled = false
+    const loadUsers = async () => {
+      setUsersLoading(true)
+      setUsersError('')
+      setUsersSuccessMessage('')
+      try {
+        const role = activeSection === 'adminUsers' ? 'admin' : undefined
+        const data = await api.listUsers(role)
+        if (!cancelled) {
+          setUsersList(Array.isArray(data) ? data : [])
+        }
+      } catch (err) {
+        if (!cancelled) {
+          setUsersError(err.message || 'Unable to load users')
+        }
+      } finally {
+        if (!cancelled) {
+          setUsersLoading(false)
+        }
+      }
+    }
+    loadUsers()
+    return () => {
+      cancelled = true
+    }
+  }, [activeSection])
 
   const handleImageChange = async (event) => {
     const file = event.target.files?.[0]
@@ -454,6 +497,27 @@ export default function AdminDashboardPage() {
       setReviewSuccessMessage('Review deleted successfully.')
     } catch (err) {
       setReviewError(err.message || 'Unable to delete review')
+    }
+  }
+
+  const handleDeleteUser = async (user) => {
+    const label = user?.name || user?.email || 'this user'
+    const shouldDelete = window.confirm(
+      `Delete ${label}? Their cart, favorites, reviews, orders, and payments will be removed. This cannot be undone.`,
+    )
+    if (!shouldDelete) {
+      return
+    }
+    setUsersError('')
+    setUsersSuccessMessage('')
+    try {
+      await api.deleteUser(user._id)
+      setUsersSuccessMessage('User deleted.')
+      const role = activeSection === 'adminUsers' ? 'admin' : undefined
+      const data = await api.listUsers(role)
+      setUsersList(Array.isArray(data) ? data : [])
+    } catch (err) {
+      setUsersError(err.message || 'Unable to delete user')
     }
   }
 
@@ -881,6 +945,83 @@ export default function AdminDashboardPage() {
                       </button>
                     </article>
                   ))}
+                </div>
+              )}
+            </section>
+          )}
+
+          {(activeSection === 'allUsers' || activeSection === 'adminUsers') && (
+            <section className="rounded-xl border border-slate-200 bg-white p-4 sm:p-5 shadow-sm">
+              <div className="mb-4 flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
+                <div>
+                  <p className="text-xs uppercase tracking-[0.2em] text-[#191970]">User management</p>
+                  <h3 className="text-lg font-semibold text-slate-900 mt-1">
+                    {activeSection === 'adminUsers' ? 'Admin accounts' : 'All registered users'}
+                  </h3>
+                  <p className="text-sm text-slate-600 mt-1">
+                    {activeSection === 'adminUsers'
+                      ? 'Accounts with admin access to this panel.'
+                      : 'Customers and staff. Delete removes the account and related data from the database.'}
+                  </p>
+                </div>
+                <p className="text-xs text-slate-500">
+                  {usersLoading ? 'Loading…' : `${usersList.length} user${usersList.length === 1 ? '' : 's'}`}
+                </p>
+              </div>
+              {usersError && <p className="text-sm text-red-600 mb-3">{usersError}</p>}
+              {usersSuccessMessage && <p className="text-sm text-emerald-700 mb-3">{usersSuccessMessage}</p>}
+              {usersLoading && usersList.length === 0 ? (
+                <p className="text-sm text-slate-600">Loading users…</p>
+              ) : usersList.length === 0 ? (
+                <p className="text-sm text-slate-600">No users found.</p>
+              ) : (
+                <div className="overflow-x-auto rounded-lg border border-slate-200">
+                  <table className="min-w-full text-left text-sm">
+                    <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-600">
+                      <tr>
+                        <th className="px-3 py-2.5 font-semibold">Name</th>
+                        <th className="px-3 py-2.5 font-semibold">Email</th>
+                        <th className="px-3 py-2.5 font-semibold">Phone</th>
+                        <th className="px-3 py-2.5 font-semibold">Role</th>
+                        <th className="px-3 py-2.5 font-semibold">Verified</th>
+                        <th className="px-3 py-2.5 font-semibold">Joined</th>
+                        <th className="px-3 py-2.5 font-semibold text-right">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {usersList.map((u) => (
+                        <tr key={u._id} className="text-slate-800">
+                          <td className="px-3 py-2.5 font-medium">{u.name || '—'}</td>
+                          <td className="px-3 py-2.5">{u.email || '—'}</td>
+                          <td className="px-3 py-2.5">{u.phone || '—'}</td>
+                          <td className="px-3 py-2.5">
+                            <span
+                              className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${
+                                u.role === 'admin'
+                                  ? 'bg-indigo-100 text-indigo-800'
+                                  : 'bg-slate-100 text-slate-700'
+                              }`}
+                            >
+                              {u.role === 'admin' ? 'Admin' : 'User'}
+                            </span>
+                          </td>
+                          <td className="px-3 py-2.5">{u.isEmailVerified ? 'Yes' : 'No'}</td>
+                          <td className="px-3 py-2.5 text-slate-600 whitespace-nowrap">
+                            {formatUserDate(u.createdAt)}
+                          </td>
+                          <td className="px-3 py-2.5 text-right">
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteUser(u)}
+                              className="rounded-md border border-red-200 bg-white px-2.5 py-1.5 text-xs font-medium text-red-700 transition hover:bg-red-50"
+                            >
+                              Delete
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
               )}
             </section>
@@ -1376,7 +1517,9 @@ export default function AdminDashboardPage() {
             </div>
           )}
 
-          {!['overview', 'products', 'offers', 'reviews', 'analytics'].includes(activeSection) && (
+          {!['overview', 'products', 'offers', 'reviews', 'analytics', 'allUsers', 'adminUsers'].includes(
+            activeSection,
+          ) && (
             <section className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
               <h2 className="text-lg font-semibold text-slate-900 capitalize">{activeSection}</h2>
               <p className="text-sm text-slate-600 mt-2">
