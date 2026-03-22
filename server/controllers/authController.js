@@ -3,6 +3,7 @@ import User from '../models/User.js';
 import { ApiError } from '../utils/ApiError.js';
 import { asyncHandler } from '../middlewares/asyncHandler.js';
 import { signAccessToken, signRefreshToken, verifyRefreshToken } from '../utils/jwt.js';
+import { sendPasswordResetEmail, sendVerificationEmail } from '../utils/email.js';
 
 const isValidEmail = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 const isValidPhone = (phone) => /^\+?[0-9]{10,15}$/.test(phone);
@@ -62,13 +63,17 @@ export const register = asyncHandler(async (req, res) => {
   user.emailVerificationExpiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
   const { accessToken, refreshToken } = await issueTokens(user);
 
-  res.status(201).json({
+  const mail = await sendVerificationEmail({ to: user.email, verifyToken: verificationToken });
+  const payload = {
     message: 'Signup successful. Please verify your email.',
     user: serializeUser(user),
     token: accessToken,
     refreshToken,
-    verificationToken,
-  });
+  };
+  if (!mail.sent && process.env.NODE_ENV !== 'production') {
+    payload.verificationToken = verificationToken;
+  }
+  res.status(201).json(payload);
 });
 
 export const login = asyncHandler(async (req, res) => {
@@ -103,12 +108,27 @@ export const refreshToken = asyncHandler(async (req, res) => {
 
 export const forgotPassword = asyncHandler(async (req, res) => {
   const user = await User.findOne({ email: normalizeEmail(req.body.email) });
-  if (!user) return res.json({ message: 'If email exists, reset instructions were generated.' });
+  if (!user) {
+    return res.json({ message: 'If an account exists for this email, we sent reset instructions.' });
+  }
   const token = crypto.randomBytes(32).toString('hex');
   user.resetPasswordTokenHash = hashToken(token);
   user.resetPasswordExpiresAt = new Date(Date.now() + 30 * 60 * 1000);
   await user.save();
-  res.json({ message: 'Reset token generated', resetToken: token });
+
+  const mail = await sendPasswordResetEmail({ to: user.email, resetToken: token });
+  const generic = { message: 'If an account exists for this email, we sent reset instructions.' };
+  if (mail.sent) {
+    return res.json(generic);
+  }
+  if (process.env.NODE_ENV !== 'production') {
+    return res.json({
+      message: 'SMTP not configured — reset link for development only.',
+      resetToken: token,
+      resetUrl: mail.resetUrl,
+    });
+  }
+  return res.json(generic);
 });
 
 export const resetPassword = asyncHandler(async (req, res) => {
@@ -119,6 +139,7 @@ export const resetPassword = asyncHandler(async (req, res) => {
   }).select('+password');
   if (!user) throw new ApiError(400, 'Invalid or expired reset token');
   user.password = password;
+  user.markModified('password');
   user.resetPasswordTokenHash = null;
   user.resetPasswordExpiresAt = null;
   await user.save();

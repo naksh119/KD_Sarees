@@ -168,9 +168,18 @@ export default function LoginPage({ isPopup = false, onClose }) {
               </div>
 
               <div>
-                <label htmlFor="password" className="mb-1 block text-sm font-medium text-gray-700">
-                  Password
-                </label>
+                <div className="mb-1 flex items-center justify-between gap-2">
+                  <label htmlFor="password" className="block text-sm font-medium text-gray-700">
+                    Password
+                  </label>
+                  <Link
+                    to="/forgot-password"
+                    state={location.state}
+                    className="text-xs font-medium text-[#0b3da2] hover:text-[#082c75]"
+                  >
+                    Forgot password?
+                  </Link>
+                </div>
                 <input
                   id="password"
                   name="password"
@@ -184,6 +193,10 @@ export default function LoginPage({ isPopup = false, onClose }) {
                   className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm text-gray-900 focus:border-[#0b3da2] focus:outline-none"
                 />
               </div>
+
+              {location.state?.passwordReset ? (
+                <p className="text-sm text-green-700">Password updated. You can sign in with your new password.</p>
+              ) : null}
 
               {error && <p className="text-sm text-red-600">{error}</p>}
 

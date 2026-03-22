@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import ConfirmPopup from '../components/ConfirmPopup'
 import { api } from '../utils/api'
 
 const ADMIN_SESSION_KEY = 'kd_sarees_admin_session'
@@ -137,6 +138,7 @@ export default function AdminDashboardPage() {
   const [usersLoading, setUsersLoading] = useState(false)
   const [usersError, setUsersError] = useState('')
   const [usersSuccessMessage, setUsersSuccessMessage] = useState('')
+  const [userPendingDelete, setUserPendingDelete] = useState(null)
   const categoryOptions = useMemo(() => normalizeCategoryList(categories), [categories])
   const selectCategoryOptions = useMemo(() => {
     const byName = new Map(categoryOptions.map((category) => [category.name.trim().toLowerCase(), category]))
@@ -193,7 +195,7 @@ export default function AdminDashboardPage() {
       setUsersError('')
       setUsersSuccessMessage('')
       try {
-        const role = activeSection === 'adminUsers' ? 'admin' : undefined
+        const role = activeSection === 'adminUsers' ? 'admin' : 'user'
         const data = await api.listUsers(role)
         if (!cancelled) {
           setUsersList(Array.isArray(data) ? data : [])
@@ -500,26 +502,24 @@ export default function AdminDashboardPage() {
     }
   }
 
-  const handleDeleteUser = async (user) => {
-    const label = user?.name || user?.email || 'this user'
-    const shouldDelete = window.confirm(
-      `Delete ${label}? Their cart, favorites, reviews, orders, and payments will be removed. This cannot be undone.`,
-    )
-    if (!shouldDelete) {
-      return
-    }
+  const confirmDeleteUser = async () => {
+    const user = userPendingDelete
+    if (!user) return
+    setUserPendingDelete(null)
     setUsersError('')
     setUsersSuccessMessage('')
     try {
       await api.deleteUser(user._id)
       setUsersSuccessMessage('User deleted.')
-      const role = activeSection === 'adminUsers' ? 'admin' : undefined
+      const role = activeSection === 'adminUsers' ? 'admin' : 'user'
       const data = await api.listUsers(role)
       setUsersList(Array.isArray(data) ? data : [])
     } catch (err) {
       setUsersError(err.message || 'Unable to delete user')
     }
   }
+
+  const userDeleteLabel = userPendingDelete?.name || userPendingDelete?.email || 'this user'
 
   const handleLogout = () => {
     localStorage.removeItem(ADMIN_SESSION_KEY)
@@ -956,22 +956,40 @@ export default function AdminDashboardPage() {
                 <div>
                   <p className="text-xs uppercase tracking-[0.2em] text-[#191970]">User management</p>
                   <h3 className="text-lg font-semibold text-slate-900 mt-1">
-                    {activeSection === 'adminUsers' ? 'Admin accounts' : 'All registered users'}
+                    {activeSection === 'adminUsers' ? 'Admin accounts' : 'All customers'}
                   </h3>
                   <p className="text-sm text-slate-600 mt-1">
                     {activeSection === 'adminUsers'
                       ? 'Accounts with admin access to this panel.'
-                      : 'Customers and staff. Delete removes the account and related data from the database.'}
+                      : 'Registered customers only (admin accounts are listed under Admin Users). Delete removes the account and related data from the database.'}
                   </p>
                 </div>
-                <p className="text-xs text-slate-500">
-                  {usersLoading ? 'Loading…' : `${usersList.length} user${usersList.length === 1 ? '' : 's'}`}
+                <p className="text-xs text-slate-500 flex items-center gap-2 min-h-[1rem]">
+                  {usersLoading ? (
+                    <>
+                      <span
+                        className="inline-block h-4 w-4 shrink-0 animate-spin rounded-full border-2 border-slate-200 border-t-[#c4a77d]"
+                        aria-hidden
+                      />
+                      <span>Loading…</span>
+                    </>
+                  ) : (
+                    `${usersList.length} user${usersList.length === 1 ? '' : 's'}`
+                  )}
                 </p>
               </div>
               {usersError && <p className="text-sm text-red-600 mb-3">{usersError}</p>}
               {usersSuccessMessage && <p className="text-sm text-emerald-700 mb-3">{usersSuccessMessage}</p>}
-              {usersLoading && usersList.length === 0 ? (
-                <p className="text-sm text-slate-600">Loading users…</p>
+              {usersLoading ? (
+                <div
+                  className="flex flex-col items-center justify-center gap-3 py-16"
+                  role="status"
+                  aria-live="polite"
+                  aria-label="Loading users"
+                >
+                  <div className="h-10 w-10 animate-spin rounded-full border-2 border-slate-200 border-t-[#c4a77d] border-r-[#c4a77d]/40" />
+                  <p className="text-sm text-slate-500">Loading users…</p>
+                </div>
               ) : usersList.length === 0 ? (
                 <p className="text-sm text-slate-600">No users found.</p>
               ) : (
@@ -1012,7 +1030,7 @@ export default function AdminDashboardPage() {
                           <td className="px-3 py-2.5 text-right">
                             <button
                               type="button"
-                              onClick={() => handleDeleteUser(u)}
+                              onClick={() => setUserPendingDelete(u)}
                               className="rounded-md border border-red-200 bg-white px-2.5 py-1.5 text-xs font-medium text-red-700 transition hover:bg-red-50"
                             >
                               Delete
@@ -1553,6 +1571,16 @@ export default function AdminDashboardPage() {
           )}
         </section>
       </div>
+      <ConfirmPopup
+        isOpen={Boolean(userPendingDelete)}
+        title={`Delete ${userDeleteLabel}?`}
+        message="Their cart, favorites, reviews, orders, and payments will be removed. This cannot be undone."
+        confirmText="Delete user"
+        cancelText="Cancel"
+        onConfirm={confirmDeleteUser}
+        onCancel={() => setUserPendingDelete(null)}
+        isDanger
+      />
     </main>
   )
 }

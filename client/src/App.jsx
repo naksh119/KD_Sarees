@@ -5,6 +5,9 @@ import HomePage from './pages/HomePage'
 import AuthEntryPage from './pages/AuthEntryPage'
 import LoginPage from './pages/LoginPage'
 import SignupPage from './pages/SignupPage'
+import ForgotPasswordPage from './pages/ForgotPasswordPage'
+import ResetPasswordPage from './pages/ResetPasswordPage'
+import VerifyEmailPage from './pages/VerifyEmailPage'
 import UserInfoPage from './pages/UserInfoPage'
 import AdminLoginPage from './pages/AdminLoginPage'
 import AdminDashboardPage from './pages/AdminDashboardPage'
@@ -63,6 +66,23 @@ function App() {
           }
         />
         <Route
+          path="/forgot-password"
+          element={
+            <GuestOnlyRoute>
+              <ForgotPasswordPage />
+            </GuestOnlyRoute>
+          }
+        />
+        <Route
+          path="/reset-password"
+          element={
+            <GuestOnlyRoute>
+              <ResetPasswordPage />
+            </GuestOnlyRoute>
+          }
+        />
+        <Route path="/verify-email" element={<VerifyEmailPage />} />
+        <Route
           path="/profile"
           element={
             <ProtectedUserRoute>
@@ -104,6 +124,23 @@ function App() {
               </GuestOnlyRoute>
             }
           />
+          <Route
+            path="/forgot-password"
+            element={
+              <GuestOnlyRoute>
+                <ForgotPasswordPage />
+              </GuestOnlyRoute>
+            }
+          />
+          <Route
+            path="/reset-password"
+            element={
+              <GuestOnlyRoute>
+                <ResetPasswordPage />
+              </GuestOnlyRoute>
+            }
+          />
+          <Route path="/verify-email" element={<VerifyEmailPage />} />
         </Routes>
       ) : null}
     </>

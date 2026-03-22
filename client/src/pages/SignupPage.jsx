@@ -1,8 +1,10 @@
 import { useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
+import PasswordInput from '../components/PasswordInput'
 import { normalizeEmail, normalizeName, validateSignupForm } from '../utils/authValidation'
 
 const AUTH_HAS_ACCOUNT_KEY = 'kd_sarees_has_account'
+const PENDING_VERIFY_KEY = 'kd_sarees_email_verify_token'
 const highlightItems = [
   'Create your account in one minute',
   'Get member-only festive offers',
@@ -66,7 +68,10 @@ export default function SignupPage({ isPopup = false, onClose }) {
       localStorage.removeItem('kd_sarees_admin_token')
       localStorage.removeItem('kd_sarees_admin_refresh_token')
       localStorage.removeItem('kd_sarees_admin_session')
-      navigate('/login', { replace: true, state: location.state })
+      if (data.verificationToken) {
+        sessionStorage.setItem(PENDING_VERIFY_KEY, data.verificationToken)
+      }
+      navigate('/verify-email', { replace: true, state: location.state })
     } catch (err) {
       setError(err.message || 'Unable to signup')
     } finally {
@@ -190,17 +195,16 @@ export default function SignupPage({ isPopup = false, onClose }) {
                 <label htmlFor="password" className="mb-1 block text-sm font-medium text-gray-700">
                   Password
                 </label>
-                <input
+                <PasswordInput
                   id="password"
                   name="password"
-                  type="password"
                   value={formData.password}
                   onChange={handleChange}
                   required
                   minLength={8}
                   maxLength={64}
                   placeholder="Create your password"
-                  className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm text-gray-900 focus:border-[#0b3da2] focus:outline-none"
+                  className="w-full rounded-lg border border-gray-300 pl-3 py-2.5 text-sm text-gray-900 focus:border-[#0b3da2] focus:outline-none"
                 />
               </div>
 
@@ -208,17 +212,16 @@ export default function SignupPage({ isPopup = false, onClose }) {
                 <label htmlFor="confirmPassword" className="mb-1 block text-sm font-medium text-gray-700">
                   Confirm Password
                 </label>
-                <input
+                <PasswordInput
                   id="confirmPassword"
                   name="confirmPassword"
-                  type="password"
                   value={formData.confirmPassword}
                   onChange={handleChange}
                   required
                   minLength={8}
                   maxLength={64}
                   placeholder="Confirm your password"
-                  className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm text-gray-900 focus:border-[#0b3da2] focus:outline-none"
+                  className="w-full rounded-lg border border-gray-300 pl-3 py-2.5 text-sm text-gray-900 focus:border-[#0b3da2] focus:outline-none"
                 />
               </div>
 
